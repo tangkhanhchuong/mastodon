@@ -2,7 +2,7 @@ import api from '../api';
 
 import { deleteFromTimelines } from './timelines';
 import { importFetchedStatus, importFetchedStatuses, importFetchedAccount } from './importer';
-import { ensureComposeIsVisible } from './compose';
+import { ensureComposeIsVisible, setComposeToStatus } from './compose';
 
 export const STATUS_FETCH_REQUEST = 'STATUS_FETCH_REQUEST';
 export const STATUS_FETCH_SUCCESS = 'STATUS_FETCH_SUCCESS';
@@ -29,6 +29,10 @@ export const STATUS_HIDE     = 'STATUS_HIDE';
 export const STATUS_COLLAPSE = 'STATUS_COLLAPSE';
 
 export const REDRAFT = 'REDRAFT';
+
+export const STATUS_EDIT_REQUEST = 'STATUS_EDIT_REQUEST';
+export const STATUS_EDIT_SUCCESS = 'STATUS_EDIT_SUCCESS';
+export const STATUS_EDIT_FAIL    = 'STATUS_EDIT_FAIL';
 
 export function fetchStatusRequest(id, skipLoading) {
   return {
@@ -84,25 +88,45 @@ export function redraft(status, raw_text) {
   };
 };
 
-export function deleteStatus(id, routerHistory, withRedraft = false) {
+export const editStatus = (id, routerHistory) => (dispatch, getState) => {
+  let status = getState().getIn(['statuses', id]);
+
+  if (status.get('poll')) {
+    status = status.set('poll', getState().getIn(['polls', status.get('poll')]));
+  }
+
+  dispatch(editStatusRequest());
+
+  api(getState).get(`/api/v1/statuses/${id}/source`).then(response => {
+    dispatch(editStatusSuccess());
+    ensureComposeIsVisible(getState, routerHistory);
+    dispatch(setComposeToStatus(status, response.data.text, response.data.spoiler_text));
+  }).catch(error => {
+    dispatch(editStatusFail(error));
+  });
+};
+
+export const editStatusRequest = () => ({
+  type: STATUS_EDIT_REQUEST,
+});
+
+export const editStatusSuccess = () => ({
+  type: STATUS_EDIT_SUCCESS,
+});
+
+export const editStatusFail = error => ({
+  type: STATUS_EDIT_FAIL,
+  error,
+});
+
+export function deleteStatus(id, routerHistory) {
   return (dispatch, getState) => {
-    let status = getState().getIn(['statuses', id]);
-
-    if (status.get('poll')) {
-      status = status.set('poll', getState().getIn(['polls', status.get('poll')]));
-    }
-
     dispatch(deleteStatusRequest(id));
 
     api(getState).delete(`/api/v1/statuses/${id}`).then(response => {
       dispatch(deleteStatusSuccess(id));
       dispatch(deleteFromTimelines(id));
       dispatch(importFetchedAccount(response.data.account));
-
-      if (withRedraft) {
-        dispatch(redraft(status, response.data.text));
-        ensureComposeIsVisible(getState, routerHistory);
-      }
     }).catch(error => {
       dispatch(deleteStatusFail(id, error));
     });
@@ -130,6 +154,9 @@ export function deleteStatusFail(id, error) {
     error: error,
   };
 };
+
+export const updateStatus = status => dispatch =>
+  dispatch(importFetchedStatus(status));
 
 export function fetchContext(id) {
   return (dispatch, getState) => {
