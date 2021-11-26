@@ -19,7 +19,7 @@ id:
         account:
           attributes:
             username:
-              invalid: hanya boleh berisi huruf, angka, dan garis bawah
+              invalid: hanya boleh berisi huruf, angka, dan underscore
               reserved: sudah dipesan
         status:
           attributes:

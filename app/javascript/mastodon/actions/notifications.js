@@ -1,6 +1,6 @@
 import api, { getLinks } from '../api';
 import IntlMessageFormat from 'intl-messageformat';
-import { fetchFollowRequests, fetchRelationships } from './accounts';
+import { fetchRelationships } from './accounts';
 import {
   importFetchedAccount,
   importFetchedAccounts,
@@ -76,10 +76,6 @@ export function updateNotifications(notification, intlMessages, intlLocale) {
       }
 
       filtered = regex && regex.test(searchIndex);
-    }
-
-    if (['follow_request'].includes(notification.type)) {
-      dispatch(fetchFollowRequests());
     }
 
     dispatch(submitMarkers());

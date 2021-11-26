@@ -35,7 +35,4 @@ plugins:
     enabled: true
 exclude_patterns:
 - spec/
-- vendor/asset/
-
-- app/javascript/mastodon/locales/**/*.json
-- config/locales/**/*.yml
+- vendor/asset

@@ -36,11 +36,10 @@ class Tag < ApplicationRecord
   scope :usable, -> { where(usable: [true, nil]) }
   scope :listable, -> { where(listable: [true, nil]) }
   scope :trendable, -> { Setting.trendable_by_default ? where(trendable: [true, nil]) : where(trendable: true) }
-  scope :not_trendable, -> { where(trendable: false) }
   scope :recently_used, ->(account) { joins(:statuses).where(statuses: { id: account.statuses.select(:id).limit(1000) }).group(:id).order(Arel.sql('count(*) desc')) }
   scope :matches_name, ->(term) { where(arel_table[:name].lower.matches(arel_table.lower("#{sanitize_sql_like(Tag.normalize(term))}%"), nil, true)) } # Search with case-sensitive to use B-tree index
 
-  update_index('tags', :self)
+  update_index('tags#tag', :self)
 
   def to_param
     name
@@ -76,16 +75,28 @@ class Tag < ApplicationRecord
     requested_review_at.present?
   end
 
-  def requires_review_notification?
-    requires_review? && !requested_review?
+  def use!(account, status: nil, at_time: Time.now.utc)
+    TrendingTags.record_use!(self, account, status: status, at_time: at_time)
   end
 
-  def decaying?
-    max_score_at && max_score_at >= Trends.tags.options[:max_score_cooldown].ago && max_score_at < 1.day.ago
+  def trending?
+    TrendingTags.trending?(self)
   end
 
   def history
-    @history ||= Trends::History.new('tags', id)
+    days = []
+
+    7.times do |i|
+      day = i.days.ago.beginning_of_day.to_i
+
+      days << {
+        day: day.to_s,
+        uses: Redis.current.get("activity:tags:#{id}:#{day}") || '0',
+        accounts: Redis.current.pfcount("activity:tags:#{id}:#{day}:accounts").to_s,
+      }
+    end
+
+    days
   end
 
   class << self

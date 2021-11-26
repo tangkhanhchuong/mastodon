@@ -29,6 +29,7 @@ class Blocks extends ImmutablePureComponent {
   static propTypes = {
     params: PropTypes.object.isRequired,
     dispatch: PropTypes.func.isRequired,
+    shouldUpdateScroll: PropTypes.func,
     accountIds: ImmutablePropTypes.list,
     hasMore: PropTypes.bool,
     isLoading: PropTypes.bool,
@@ -45,7 +46,7 @@ class Blocks extends ImmutablePureComponent {
   }, 300, { leading: true });
 
   render () {
-    const { intl, accountIds, hasMore, multiColumn, isLoading } = this.props;
+    const { intl, accountIds, shouldUpdateScroll, hasMore, multiColumn, isLoading } = this.props;
 
     if (!accountIds) {
       return (
@@ -65,6 +66,7 @@ class Blocks extends ImmutablePureComponent {
           onLoadMore={this.handleLoadMore}
           hasMore={hasMore}
           isLoading={isLoading}
+          shouldUpdateScroll={shouldUpdateScroll}
           emptyMessage={emptyMessage}
           bindToDocument={!multiColumn}
         >

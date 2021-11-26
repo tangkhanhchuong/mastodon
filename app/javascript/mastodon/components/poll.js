@@ -12,18 +12,8 @@ import RelativeTimestamp from './relative_timestamp';
 import Icon from 'mastodon/components/icon';
 
 const messages = defineMessages({
-  closed: {
-    id: 'poll.closed',
-    defaultMessage: 'Closed',
-  },
-  voted: {
-    id: 'poll.voted',
-    defaultMessage: 'You voted for this answer',
-  },
-  votes: {
-    id: 'poll.votes',
-    defaultMessage: '{votes, plural, one {# vote} other {# votes}}',
-  },
+  closed: { id: 'poll.closed', defaultMessage: 'Closed' },
+  voted: { id: 'poll.voted', defaultMessage: 'You voted for this answer', description: 'Tooltip of the "voted" checkmark in polls' },
 });
 
 const makeEmojiMap = record => record.get('emojis').reduce((obj, emoji) => {
@@ -158,16 +148,9 @@ class Poll extends ImmutablePureComponent {
               data-index={optionIndex}
             />
           )}
-          {showResults && (
-            <span
-              className='poll__number'
-              title={intl.formatMessage(messages.votes, {
-                votes: option.get('votes_count'),
-              })}
-            >
-              {Math.round(percent)}%
-            </span>
-          )}
+          {showResults && <span className='poll__number'>
+            {Math.round(percent)}%
+          </span>}
 
           <span
             className='poll__option__text translate'

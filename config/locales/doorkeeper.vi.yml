@@ -21,7 +21,7 @@ vi:
       buttons:
         authorize: Cho phép
         cancel: Hủy bỏ
-        destroy: Xóa bỏ
+        destroy: Xoá bỏ
         edit: Sửa
         submit: Gửi đi
       confirmations:

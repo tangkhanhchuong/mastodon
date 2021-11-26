@@ -13,20 +13,7 @@ class ActivityPub::FetchRemoteStatusService < BaseService
       end
     end
 
-    return unless supported_context?
-
-    actor_id = nil
-    activity_json = nil
-
-    if expected_object_type?
-      actor_id = value_or_id(first_of_value(@json['attributedTo']))
-      activity_json = { 'type' => 'Create', 'actor' => actor_id, 'object' => @json }
-    elsif expected_activity_type?
-      actor_id = value_or_id(first_of_value(@json['actor']))
-      activity_json = @json
-    end
-
-    return if activity_json.nil? || !trustworthy_attribution?(@json['id'], actor_id)
+    return if !(supported_context? && expected_type?) || actor_id.nil? || !trustworthy_attribution?(@json['id'], actor_id)
 
     actor = ActivityPub::TagManager.instance.uri_to_resource(actor_id, Account)
     actor = ActivityPub::FetchRemoteAccountService.new.call(actor_id, id: true) if actor.nil? || needs_update?(actor)
@@ -38,6 +25,14 @@ class ActivityPub::FetchRemoteStatusService < BaseService
 
   private
 
+  def activity_json
+    { 'type' => 'Create', 'actor' => actor_id, 'object' => @json }
+  end
+
+  def actor_id
+    value_or_id(first_of_value(@json['attributedTo']))
+  end
+
   def trustworthy_attribution?(uri, attributed_to)
     return false if uri.nil? || attributed_to.nil?
     Addressable::URI.parse(uri).normalized_host.casecmp(Addressable::URI.parse(attributed_to).normalized_host).zero?
@@ -47,11 +42,7 @@ class ActivityPub::FetchRemoteStatusService < BaseService
     super(@json)
   end
 
-  def expected_activity_type?
-    equals_or_includes_any?(@json['type'], %w(Create Announce))
-  end
-
-  def expected_object_type?
+  def expected_type?
     equals_or_includes_any?(@json['type'], ActivityPub::Activity::Create::SUPPORTED_TYPES + ActivityPub::Activity::Create::CONVERTED_TYPES)
   end
 

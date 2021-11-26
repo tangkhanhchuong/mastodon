@@ -5,9 +5,6 @@ ro:
       poll:
         expires_at: Termen limită
         options: Alegeri
-      user:
-        email: Adresă e-mail
-        password: Parolă
     errors:
       models:
         account:

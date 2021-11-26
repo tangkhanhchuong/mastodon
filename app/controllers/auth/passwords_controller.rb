@@ -10,6 +10,7 @@ class Auth::PasswordsController < Devise::PasswordsController
     super do |resource|
       if resource.errors.empty?
         resource.session_activations.destroy_all
+        resource.forget_me!
       end
     end
   end

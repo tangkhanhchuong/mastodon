@@ -64,10 +64,6 @@ class ActivityPub::TagManager
     account_status_replies_url(target.account, target, page_params)
   end
 
-  def followers_uri_for(target)
-    target.local? ? account_followers_url(target) : target.followers_url.presence
-  end
-
   # Primary audience of a status
   # Public statuses go out to primarily the public collection
   # Unlisted and private statuses go out primarily to the followers collection
@@ -84,17 +80,17 @@ class ActivityPub::TagManager
         account_ids = status.active_mentions.pluck(:account_id)
         to = status.account.followers.where(id: account_ids).each_with_object([]) do |account, result|
           result << uri_for(account)
-          result << followers_uri_for(account) if account.group?
+          result << account_followers_url(account) if account.group?
         end
         to.concat(FollowRequest.where(target_account_id: status.account_id, account_id: account_ids).each_with_object([]) do |request, result|
           result << uri_for(request.account)
-          result << followers_uri_for(request.account) if request.account.group?
-        end).compact
+          result << account_followers_url(request.account) if request.account.group?
+        end)
       else
         status.active_mentions.each_with_object([]) do |mention, result|
           result << uri_for(mention.account)
-          result << followers_uri_for(mention.account) if mention.account.group?
-        end.compact
+          result << account_followers_url(mention.account) if mention.account.group?
+        end
       end
     end
   end
@@ -122,17 +118,17 @@ class ActivityPub::TagManager
         account_ids = status.active_mentions.pluck(:account_id)
         cc.concat(status.account.followers.where(id: account_ids).each_with_object([]) do |account, result|
           result << uri_for(account)
-          result << followers_uri_for(account) if account.group?
-        end.compact)
+          result << account_followers_url(account) if account.group?
+        end)
         cc.concat(FollowRequest.where(target_account_id: status.account_id, account_id: account_ids).each_with_object([]) do |request, result|
           result << uri_for(request.account)
-          result << followers_uri_for(request.account) if request.account.group?
-        end.compact)
+          result << account_followers_url(request.account) if request.account.group?
+        end)
       else
         cc.concat(status.active_mentions.each_with_object([]) do |mention, result|
           result << uri_for(mention.account)
-          result << followers_uri_for(mention.account) if mention.account.group?
-        end.compact)
+          result << account_followers_url(mention.account) if mention.account.group?
+        end)
       end
     end
 

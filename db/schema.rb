@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_11_26_000907) do
+ActiveRecord::Schema.define(version: 2021_05_26_193025) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -49,6 +49,18 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
     t.datetime "updated_at", null: false
     t.bigint "account_id"
     t.index ["account_id", "domain"], name: "index_account_domain_blocks_on_account_id_and_domain", unique: true
+  end
+
+  create_table "account_identity_proofs", force: :cascade do |t|
+    t.bigint "account_id"
+    t.string "provider", default: "", null: false
+    t.string "provider_username", default: "", null: false
+    t.text "token", default: "", null: false
+    t.boolean "verified", default: false, null: false
+    t.boolean "live", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "provider", "provider_username"], name: "index_account_proofs_on_account_and_provider_and_username", unique: true
   end
 
   create_table "account_migrations", force: :cascade do |t|
@@ -100,23 +112,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
     t.datetime "updated_at", null: false
     t.datetime "last_status_at"
     t.index ["account_id"], name: "index_account_stats_on_account_id", unique: true
-  end
-
-  create_table "account_statuses_cleanup_policies", force: :cascade do |t|
-    t.bigint "account_id", null: false
-    t.boolean "enabled", default: true, null: false
-    t.integer "min_status_age", default: 1209600, null: false
-    t.boolean "keep_direct", default: true, null: false
-    t.boolean "keep_pinned", default: true, null: false
-    t.boolean "keep_polls", default: false, null: false
-    t.boolean "keep_media", default: false, null: false
-    t.boolean "keep_self_fav", default: true, null: false
-    t.boolean "keep_self_bookmark", default: true, null: false
-    t.integer "min_favs"
-    t.integer "min_reblogs"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["account_id"], name: "index_account_statuses_cleanup_policies_on_account_id"
   end
 
   create_table "account_warning_presets", force: :cascade do |t|
@@ -499,18 +494,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
     t.index ["account_id"], name: "index_lists_on_account_id"
   end
 
-  create_table "login_activities", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.string "authentication_method"
-    t.string "provider"
-    t.boolean "success"
-    t.string "failure_reason"
-    t.inet "ip"
-    t.string "user_agent"
-    t.datetime "created_at"
-    t.index ["user_id"], name: "index_login_activities_on_user_id"
-  end
-
   create_table "markers", force: :cascade do |t|
     t.bigint "user_id"
     t.string "timeline", default: "", null: false
@@ -677,20 +660,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
     t.index ["status_id"], name: "index_polls_on_status_id"
   end
 
-  create_table "preview_card_providers", force: :cascade do |t|
-    t.string "domain", default: "", null: false
-    t.string "icon_file_name"
-    t.string "icon_content_type"
-    t.bigint "icon_file_size"
-    t.datetime "icon_updated_at"
-    t.boolean "trendable"
-    t.datetime "reviewed_at"
-    t.datetime "requested_review_at"
-    t.datetime "created_at", precision: 6, null: false
-    t.datetime "updated_at", precision: 6, null: false
-    t.index ["domain"], name: "index_preview_card_providers_on_domain", unique: true
-  end
-
   create_table "preview_cards", force: :cascade do |t|
     t.string "url", default: "", null: false
     t.string "title", default: "", null: false
@@ -712,11 +681,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
     t.string "embed_url", default: "", null: false
     t.integer "image_storage_schema_version"
     t.string "blurhash"
-    t.string "language"
-    t.float "max_score"
-    t.datetime "max_score_at"
-    t.boolean "trendable"
-    t.integer "link_type"
     t.index ["url"], name: "index_preview_cards_on_url", unique: true
   end
 
@@ -951,7 +915,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
     t.datetime "sign_in_token_sent_at"
     t.string "webauthn_id"
     t.inet "sign_up_ip"
-    t.boolean "skip_sign_in_token"
     t.index ["account_id"], name: "index_users_on_account_id"
     t.index ["confirmation_token"], name: "index_users_on_confirmation_token", unique: true
     t.index ["created_by_application_id"], name: "index_users_on_created_by_application_id"
@@ -998,6 +961,7 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
   add_foreign_key "account_conversations", "conversations", on_delete: :cascade
   add_foreign_key "account_deletion_requests", "accounts", on_delete: :cascade
   add_foreign_key "account_domain_blocks", "accounts", name: "fk_206c6029bd", on_delete: :cascade
+  add_foreign_key "account_identity_proofs", "accounts", on_delete: :cascade
   add_foreign_key "account_migrations", "accounts", column: "target_account_id", on_delete: :nullify
   add_foreign_key "account_migrations", "accounts", on_delete: :cascade
   add_foreign_key "account_moderation_notes", "accounts"
@@ -1007,7 +971,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
   add_foreign_key "account_pins", "accounts", column: "target_account_id", on_delete: :cascade
   add_foreign_key "account_pins", "accounts", on_delete: :cascade
   add_foreign_key "account_stats", "accounts", on_delete: :cascade
-  add_foreign_key "account_statuses_cleanup_policies", "accounts", on_delete: :cascade
   add_foreign_key "account_warnings", "accounts", column: "target_account_id", on_delete: :cascade
   add_foreign_key "account_warnings", "accounts", on_delete: :nullify
   add_foreign_key "accounts", "accounts", column: "moved_to_account_id", on_delete: :nullify
@@ -1022,7 +985,7 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
   add_foreign_key "blocks", "accounts", name: "fk_4269e03e65", on_delete: :cascade
   add_foreign_key "bookmarks", "accounts", on_delete: :cascade
   add_foreign_key "bookmarks", "statuses", on_delete: :cascade
-  add_foreign_key "canonical_email_blocks", "accounts", column: "reference_account_id", on_delete: :cascade
+  add_foreign_key "canonical_email_blocks", "accounts", column: "reference_account_id"
   add_foreign_key "conversation_mutes", "accounts", name: "fk_225b4212bb", on_delete: :cascade
   add_foreign_key "conversation_mutes", "conversations", on_delete: :cascade
   add_foreign_key "custom_filters", "accounts", on_delete: :cascade
@@ -1047,7 +1010,6 @@ ActiveRecord::Schema.define(version: 2021_11_26_000907) do
   add_foreign_key "list_accounts", "follows", on_delete: :cascade
   add_foreign_key "list_accounts", "lists", on_delete: :cascade
   add_foreign_key "lists", "accounts", on_delete: :cascade
-  add_foreign_key "login_activities", "users", on_delete: :cascade
   add_foreign_key "markers", "users", on_delete: :cascade
   add_foreign_key "media_attachments", "accounts", name: "fk_96dd81e81b", on_delete: :nullify
   add_foreign_key "media_attachments", "scheduled_statuses", on_delete: :nullify

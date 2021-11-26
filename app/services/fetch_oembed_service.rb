@@ -2,7 +2,6 @@
 
 class FetchOEmbedService
   ENDPOINT_CACHE_EXPIRES_IN = 24.hours.freeze
-  URL_REGEX                 = /(=(http[s]?(%3A|:)(\/\/|%2F%2F)))([^&]*)/i.freeze
 
   attr_reader :url, :options, :format, :endpoint_url
 
@@ -66,12 +65,10 @@ class FetchOEmbedService
   end
 
   def cache_endpoint!
-    return unless URL_REGEX.match?(@endpoint_url)
-
     url_domain = Addressable::URI.parse(@url).normalized_host
 
     endpoint_hash = {
-      endpoint: @endpoint_url.gsub(URL_REGEX, '={url}'),
+      endpoint: @endpoint_url.gsub(/(=(http[s]?(%3A|:)(\/\/|%2F%2F)))([^&]*)/i, '={url}'),
       format: @format,
     }
 

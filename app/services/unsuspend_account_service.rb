@@ -1,14 +1,13 @@
 # frozen_string_literal: true
 
 class UnsuspendAccountService < BaseService
-  include Payloadable
   def call(account)
     @account = account
 
     unsuspend!
     refresh_remote_account!
 
-    return if @account.nil? || @account.suspended?
+    return if @account.nil?
 
     merge_into_home_timelines!
     merge_into_list_timelines!

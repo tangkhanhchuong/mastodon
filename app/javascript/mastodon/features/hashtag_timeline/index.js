@@ -24,6 +24,7 @@ class HashtagTimeline extends React.PureComponent {
     params: PropTypes.object.isRequired,
     columnId: PropTypes.string,
     dispatch: PropTypes.func.isRequired,
+    shouldUpdateScroll: PropTypes.func,
     hasUnread: PropTypes.bool,
     multiColumn: PropTypes.bool,
   };
@@ -129,7 +130,7 @@ class HashtagTimeline extends React.PureComponent {
   }
 
   render () {
-    const { hasUnread, columnId, multiColumn } = this.props;
+    const { shouldUpdateScroll, hasUnread, columnId, multiColumn } = this.props;
     const { id, local } = this.props.params;
     const pinned = !!columnId;
 
@@ -155,6 +156,7 @@ class HashtagTimeline extends React.PureComponent {
           timelineId={`hashtag:${id}${local ? ':local' : ''}`}
           onLoadMore={this.handleLoadMore}
           emptyMessage={<FormattedMessage id='empty_column.hashtag' defaultMessage='There is nothing in this hashtag yet.' />}
+          shouldUpdateScroll={shouldUpdateScroll}
           bindToDocument={!multiColumn}
         />
       </Column>

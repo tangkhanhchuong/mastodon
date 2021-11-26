@@ -6,7 +6,7 @@ es-MX:
         expires_at: Vencimiento
         options: Opciones
       user:
-        agreement: Contrato de servicio
+        agreement: Acuerdo de Servicio
         email: Dirección de correo electrónico
         locale: Idioma
         password: Contraseña

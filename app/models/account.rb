@@ -58,16 +58,15 @@ class Account < ApplicationRecord
     hub_url
   )
 
-  USERNAME_RE   = /[a-z0-9_]+([a-z0-9_\.-]+[a-z0-9_]+)?/i
-  MENTION_RE    = /(?<=^|[^\/[:word:]])@((#{USERNAME_RE})(?:@[[:word:]\.\-]+[[:word:]]+)?)/i
-  URL_PREFIX_RE = /\Ahttp(s?):\/\/[^\/]+/
+  USERNAME_RE = /[a-z0-9_]+([a-z0-9_\.-]+[a-z0-9_]+)?/i
+  MENTION_RE  = /(?<=^|[^\/[:word:]])@((#{USERNAME_RE})(?:@[[:word:]\.\-]+[a-z0-9]+)?)/i
 
-  include Attachmentable
   include AccountAssociations
   include AccountAvatar
   include AccountFinderConcern
   include AccountHeader
   include AccountInteractions
+  include Attachmentable
   include Paginable
   include AccountCounters
   include DomainNormalizable
@@ -143,7 +142,7 @@ class Account < ApplicationRecord
 
   delegate :chosen_languages, to: :user, prefix: false, allow_nil: true
 
-  update_index('accounts', :self)
+  update_index('accounts#account', :self)
 
   def local?
     domain.nil?
@@ -233,11 +232,11 @@ class Account < ApplicationRecord
     suspended? && deletion_request.present?
   end
 
-  def suspend!(date: Time.now.utc, origin: :local, block_email: true)
+  def suspend!(date: Time.now.utc, origin: :local)
     transaction do
       create_deletion_request!
       update!(suspended_at: date, suspension_origin: origin)
-      create_canonical_email_block! if block_email
+      create_canonical_email_block!
     end
   end
 
@@ -296,11 +295,7 @@ class Account < ApplicationRecord
   end
 
   def fields
-    (self[:fields] || []).map do |f|
-      Field.new(self, f)
-    rescue
-      nil
-    end.compact
+    (self[:fields] || []).map { |f| Field.new(self, f) }
   end
 
   def fields_attributes=(attributes)
@@ -380,7 +375,7 @@ class Account < ApplicationRecord
   def synchronization_uri_prefix
     return 'local' if local?
 
-    @synchronization_uri_prefix ||= "#{uri[URL_PREFIX_RE]}/"
+    @synchronization_uri_prefix ||= uri[/http(s?):\/\/[^\/]+\//]
   end
 
   class Field < ActiveModelSerializers::Model
@@ -575,11 +570,7 @@ class Account < ApplicationRecord
   def create_canonical_email_block!
     return unless local? && user_email.present?
 
-    begin
-      CanonicalEmailBlock.create(reference_account: self, email: user_email)
-    rescue ActiveRecord::RecordNotUnique
-      # A canonical e-mail block may already exist for the same e-mail
-    end
+    CanonicalEmailBlock.create(reference_account: self, email: user_email)
   end
 
   def destroy_canonical_email_block!

@@ -24,6 +24,7 @@ class PinnedStatuses extends ImmutablePureComponent {
 
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    shouldUpdateScroll: PropTypes.func,
     statusIds: ImmutablePropTypes.list.isRequired,
     intl: PropTypes.object.isRequired,
     hasMore: PropTypes.bool.isRequired,
@@ -43,7 +44,7 @@ class PinnedStatuses extends ImmutablePureComponent {
   }
 
   render () {
-    const { intl, statusIds, hasMore, multiColumn } = this.props;
+    const { intl, shouldUpdateScroll, statusIds, hasMore, multiColumn } = this.props;
 
     return (
       <Column bindToDocument={!multiColumn} icon='thumb-tack' heading={intl.formatMessage(messages.heading)} ref={this.setRef}>
@@ -52,6 +53,7 @@ class PinnedStatuses extends ImmutablePureComponent {
           statusIds={statusIds}
           scrollKey='pinned_statuses'
           hasMore={hasMore}
+          shouldUpdateScroll={shouldUpdateScroll}
           bindToDocument={!multiColumn}
         />
       </Column>

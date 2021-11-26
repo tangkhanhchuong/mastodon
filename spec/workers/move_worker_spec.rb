@@ -9,8 +9,7 @@ describe MoveWorker do
   let(:source_account)   { Fabricate(:account, protocol: :activitypub, domain: 'example.com') }
   let(:target_account)   { Fabricate(:account, protocol: :activitypub, domain: 'example.com') }
   let(:local_user)       { Fabricate(:user) }
-  let(:comment)          { 'old note prior to move' }
-  let!(:account_note)    { Fabricate(:account_note, account: local_user.account, target_account: source_account, comment: comment) }
+  let!(:account_note)    { Fabricate(:account_note, account: local_user.account, target_account: source_account) }
 
   let(:block_service) { double }
 
@@ -27,37 +26,19 @@ describe MoveWorker do
   end
 
   shared_examples 'user note handling' do
-    context 'when user notes are short enough' do
-      it 'copies user note with prelude' do
-        subject.perform(source_account.id, target_account.id)
-        expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(source_account.acct)
-        expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(account_note.comment)
-      end
-
-      it 'merges user notes when needed' do
-        new_account_note = AccountNote.create!(account: account_note.account, target_account: target_account, comment: 'new note prior to move')
-
-        subject.perform(source_account.id, target_account.id)
-        expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(source_account.acct)
-        expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(account_note.comment)
-        expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(new_account_note.comment)
-      end
+    it 'copies user note' do
+      subject.perform(source_account.id, target_account.id)
+      expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(source_account.acct)
+      expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(account_note.comment)
     end
 
-    context 'when user notes are too long' do
-      let(:comment) { 'abc' * 333 }
+    it 'merges user notes when needed' do
+      new_account_note = AccountNote.create!(account: account_note.account, target_account: target_account, comment: 'new note prior to move')
 
-      it 'copies user note without prelude' do
-        subject.perform(source_account.id, target_account.id)
-        expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(account_note.comment)
-      end
-
-      it 'keeps user notes unchanged' do
-        new_account_note = AccountNote.create!(account: account_note.account, target_account: target_account, comment: 'new note prior to move')
-
-        subject.perform(source_account.id, target_account.id)
-        expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(new_account_note.comment)
-      end
+      subject.perform(source_account.id, target_account.id)
+      expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(source_account.acct)
+      expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(account_note.comment)
+      expect(AccountNote.find_by(account: account_note.account, target_account: target_account).comment).to include(new_account_note.comment)
     end
   end
 

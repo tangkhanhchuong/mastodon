@@ -43,6 +43,7 @@ class PublicTimeline extends React.PureComponent {
 
   static propTypes = {
     dispatch: PropTypes.func.isRequired,
+    shouldUpdateScroll: PropTypes.func,
     intl: PropTypes.object.isRequired,
     columnId: PropTypes.string,
     multiColumn: PropTypes.bool,
@@ -105,7 +106,7 @@ class PublicTimeline extends React.PureComponent {
   }
 
   render () {
-    const { intl, columnId, hasUnread, multiColumn, onlyMedia, onlyRemote } = this.props;
+    const { intl, shouldUpdateScroll, columnId, hasUnread, multiColumn, onlyMedia, onlyRemote } = this.props;
     const pinned = !!columnId;
 
     return (
@@ -129,6 +130,7 @@ class PublicTimeline extends React.PureComponent {
           trackScroll={!pinned}
           scrollKey={`public_timeline-${columnId}`}
           emptyMessage={<FormattedMessage id='empty_column.public' defaultMessage='There is nothing here! Write something publicly, or manually follow users from other servers to fill it up' />}
+          shouldUpdateScroll={shouldUpdateScroll}
           bindToDocument={!multiColumn}
         />
       </Column>

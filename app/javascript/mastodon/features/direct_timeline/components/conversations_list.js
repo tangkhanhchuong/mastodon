@@ -14,6 +14,7 @@ export default class ConversationsList extends ImmutablePureComponent {
     hasMore: PropTypes.bool,
     isLoading: PropTypes.bool,
     onLoadMore: PropTypes.func,
+    shouldUpdateScroll: PropTypes.func,
   };
 
   getCurrentIndex = id => this.props.conversations.findIndex(x => x.get('id') === id)

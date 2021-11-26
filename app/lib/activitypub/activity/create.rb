@@ -164,13 +164,8 @@ class ActivityPub::Activity::Create < ActivityPub::Activity
   def attach_tags(status)
     @tags.each do |tag|
       status.tags << tag
-      tag.update(last_status_at: status.created_at) if tag.last_status_at.nil? || (tag.last_status_at < status.created_at && tag.last_status_at < 12.hours.ago)
+      tag.use!(@account, status: status, at_time: status.created_at) if status.public_visibility?
     end
-
-    # If we're processing an old status, this may register tags as being used now
-    # as opposed to when the status was really published, but this is probably
-    # not a big deal
-    Trends.tags.register(status)
 
     @mentions.each do |mention|
       mention.status = status
@@ -228,8 +223,8 @@ class ActivityPub::Activity::Create < ActivityPub::Activity
     emoji ||= CustomEmoji.new(domain: @account.domain, shortcode: shortcode, uri: uri)
     emoji.image_remote_url = image_url
     emoji.save
-  rescue Seahorse::Client::NetworkingError => e
-    Rails.logger.warn "Error storing emoji: #{e}"
+  rescue Seahorse::Client::NetworkingError
+    nil
   end
 
   def process_attachments
@@ -252,8 +247,8 @@ class ActivityPub::Activity::Create < ActivityPub::Activity
         media_attachment.save
       rescue Mastodon::UnexpectedResponseError, HTTP::TimeoutError, HTTP::ConnectionError, OpenSSL::SSL::SSLError
         RedownloadMediaWorker.perform_in(rand(30..600).seconds, media_attachment.id)
-      rescue Seahorse::Client::NetworkingError => e
-        Rails.logger.warn "Error storing media attachment: #{e}"
+      rescue Seahorse::Client::NetworkingError
+        nil
       end
     end
 
@@ -451,12 +446,8 @@ class ActivityPub::Activity::Create < ActivityPub::Activity
   end
 
   def supported_blurhash?(blurhash)
-    components = blurhash.blank? || !blurhash_valid_chars?(blurhash) ? nil : Blurhash.components(blurhash)
+    components = blurhash.blank? ? nil : Blurhash.components(blurhash)
     components.present? && components.none? { |comp| comp > 5 }
-  end
-
-  def blurhash_valid_chars?(blurhash)
-    /^[\w#$%*+-.:;=?@\[\]^{|}~]+$/.match?(blurhash)
   end
 
   def skip_download?

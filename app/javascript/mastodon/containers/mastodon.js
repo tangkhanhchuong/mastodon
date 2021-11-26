@@ -10,6 +10,8 @@ import { hydrateStore } from '../actions/store';
 import { connectUserStream } from '../actions/streaming';
 import { IntlProvider, addLocaleData } from 'react-intl';
 import { getLocale } from '../locales';
+import { previewState as previewMediaState } from 'mastodon/features/ui/components/media_modal';
+import { previewState as previewVideoState } from 'mastodon/features/ui/components/video_modal';
 import initialState from '../initial_state';
 import ErrorBoundary from '../components/error_boundary';
 
@@ -22,38 +24,14 @@ const hydrateAction = hydrateStore(initialState);
 store.dispatch(hydrateAction);
 store.dispatch(fetchCustomEmojis());
 
-const createIdentityContext = state => ({
-  signedIn: !!state.meta.me,
-  accountId: state.meta.me,
-  accessToken: state.meta.access_token,
-});
-
 export default class Mastodon extends React.PureComponent {
 
   static propTypes = {
     locale: PropTypes.string.isRequired,
   };
 
-  static childContextTypes = {
-    identity: PropTypes.shape({
-      signedIn: PropTypes.bool.isRequired,
-      accountId: PropTypes.string,
-      accessToken: PropTypes.string,
-    }).isRequired,
-  };
-
-  identity = createIdentityContext(initialState);
-
-  getChildContext() {
-    return {
-      identity: this.identity,
-    };
-  }
-
   componentDidMount() {
-    if (this.identity.signedIn) {
-      this.disconnect = store.dispatch(connectUserStream());
-    }
+    this.disconnect = store.dispatch(connectUserStream());
   }
 
   componentWillUnmount () {
@@ -63,8 +41,8 @@ export default class Mastodon extends React.PureComponent {
     }
   }
 
-  shouldUpdateScroll (prevRouterProps, { location }) {
-    return !(location.state?.mastodonModalKey && location.state?.mastodonModalKey !== prevRouterProps?.location?.state?.mastodonModalKey);
+  shouldUpdateScroll (_, { location }) {
+    return location.state !== previewMediaState && location.state !== previewVideoState;
   }
 
   render () {

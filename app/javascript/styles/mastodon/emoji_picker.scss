@@ -169,7 +169,7 @@
   }
 
   &:hover::before {
-    z-index: -1;
+    z-index: 0;
     content: "";
     position: absolute;
     top: 0;
