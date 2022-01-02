@@ -1,10 +1,10 @@
 import { normalizeAccount, normalizeStatus, normalizePoll } from './normalizer';
 
-export const ACCOUNT_IMPORT  = 'ACCOUNT_IMPORT';
+export const ACCOUNT_IMPORT = 'ACCOUNT_IMPORT';
 export const ACCOUNTS_IMPORT = 'ACCOUNTS_IMPORT';
-export const STATUS_IMPORT   = 'STATUS_IMPORT';
+export const STATUS_IMPORT = 'STATUS_IMPORT';
 export const STATUSES_IMPORT = 'STATUSES_IMPORT';
-export const POLLS_IMPORT    = 'POLLS_IMPORT';
+export const POLLS_IMPORT = 'POLLS_IMPORT';
 
 function pushUnique(array, object) {
   if (array.every(element => element.id !== object.id)) {

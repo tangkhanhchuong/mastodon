@@ -101,7 +101,7 @@ const makeMapStateToProps = () => {
     const ids = [statusId];
 
     while (ids.length > 0) {
-      let id        = ids.shift();
+      let id = ids.shift();
       const replies = contextReplies.get(id);
 
       if (statusId !== id) {
@@ -130,23 +130,53 @@ const makeMapStateToProps = () => {
   });
 
   const mapStateToProps = (state, props) => {
-    const status = getStatus(state, { id: props.params.statusId });
+    const userId = props.params.statusId;
+    const tempConversations = JSON.parse(JSON.stringify(state.get('conversations')));
+    const conversations = tempConversations.items.length !== 0 ? tempConversations : JSON.parse(localStorage.getItem('conversations'));
+    localStorage.setItem('conversations', JSON.stringify(conversations));
 
-    let ancestorsIds   = Immutable.List();
+    const threadsInfo = conversations.items.filter(item => {
+      return item.accounts[0] === userId;
+    })
+
+    const threads = []
+
+    const updatedState = state.set('conversations', Immutable.Map(conversations))
+
+    for (let threadInfo of threadsInfo) {
+
+      const thread = getStatus(updatedState, { id: threadInfo['last_status'] });
+
+      let threadAncestorsIds = Immutable.List();
+      let threadDescendantsIds = Immutable.List();
+
+      if (thread) {
+        threadAncestorsIds = getAncestorsIds(updatedState, { id: thread.get('in_reply_to_id') });
+        threadDescendantsIds = getDescendantsIds(updatedState, { id: thread.get('id') });
+      }
+
+      threads.push({ thread, threadAncestorsIds, threadDescendantsIds });
+    }
+
+
+    const status = getStatus(updatedState, { id: props.params.statusId });
+
+    let ancestorsIds = Immutable.List();
     let descendantsIds = Immutable.List();
 
     if (status) {
-      ancestorsIds   = getAncestorsIds(state, { id: status.get('in_reply_to_id') });
-      descendantsIds = getDescendantsIds(state, { id: status.get('id') });
+      ancestorsIds = getAncestorsIds(updatedState, { id: status.get('in_reply_to_id') });
+      descendantsIds = getDescendantsIds(updatedState, { id: status.get('id') });
     }
 
     return {
       status,
       ancestorsIds,
       descendantsIds,
-      askReplyConfirmation: state.getIn(['compose', 'text']).trim().length !== 0,
-      domain: state.getIn(['meta', 'domain']),
-      pictureInPicture: getPictureInPicture(state, { id: props.params.statusId }),
+      askReplyConfirmation: updatedState.getIn(['compose', 'text']).trim().length !== 0,
+      domain: updatedState.getIn(['meta', 'domain']),
+      pictureInPicture: getPictureInPicture(updatedState, { id: props.params.statusId }),
+      threads
     };
   };
 
@@ -175,25 +205,33 @@ class Status extends ImmutablePureComponent {
       inUse: PropTypes.bool,
       available: PropTypes.bool,
     }),
+    threads: PropTypes.array
   };
 
   state = {
     fullscreen: false,
-    showMedia: defaultMediaVisibility(this.props.status),
+    // showMedia: defaultMediaVisibility(this.props.status),
+    showMedia: defaultMediaVisibility(this.props.threads[0].thread),
     loadedStatusId: undefined,
   };
 
-  componentWillMount () {
-    this.props.dispatch(fetchStatus(this.props.params.statusId));
+  componentWillMount() {
+    const threads = this.props.threads[0].thread ? this.props.threads : JSON.parse(localStorage.getItem('threads'));
+    if (threads[0].thread) localStorage.setItem('threads', JSON.stringify(threads));
+    const threadId = threads[0].thread.id ? threads[0].thread.id : threads[0].thread.get('id')
+
+    this.props.dispatch(fetchStatus(threadId));
   }
 
-  componentDidMount () {
+  componentDidMount() {
     attachFullscreenListener(this.onFullScreenChange);
   }
 
-  componentWillReceiveProps (nextProps) {
+  componentWillReceiveProps(nextProps) {
+
     if (nextProps.params.statusId !== this.props.params.statusId && nextProps.params.statusId) {
       this._scrolledIntoView = false;
+
       this.props.dispatch(fetchStatus(nextProps.params.statusId));
     }
 
@@ -441,7 +479,7 @@ class Status extends ImmutablePureComponent {
     }
   }
 
-  _selectChild (index, align_top) {
+  _selectChild(index, align_top) {
     const container = this.node;
     const element = container.querySelectorAll('.focusable')[index];
 
@@ -455,7 +493,7 @@ class Status extends ImmutablePureComponent {
     }
   }
 
-  renderChildren (list) {
+  renderChildren(list) {
     return list.map(id => (
       <StatusContainer
         key={id}
@@ -471,7 +509,7 @@ class Status extends ImmutablePureComponent {
     this.node = c;
   }
 
-  componentDidUpdate () {
+  componentDidUpdate() {
     if (this._scrolledIntoView) {
       return;
     }
@@ -488,7 +526,7 @@ class Status extends ImmutablePureComponent {
     }
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     detachFullscreenListener(this.onFullScreenChange);
   }
 
@@ -496,12 +534,13 @@ class Status extends ImmutablePureComponent {
     this.setState({ fullscreen: isFullscreen() });
   }
 
-  render () {
+  render() {
     let ancestors, descendants;
-    const { shouldUpdateScroll, status, ancestorsIds, descendantsIds, intl, domain, multiColumn, pictureInPicture } = this.props;
+    const { shouldUpdateScroll, intl, domain, multiColumn, pictureInPicture, threads } = this.props;
     const { fullscreen } = this.state;
 
-    if (status === null) {
+    const status = threads[0].thread
+    if (!threads || !status) {
       return (
         <Column>
           <ColumnBackButton multiColumn={multiColumn} />
@@ -510,6 +549,9 @@ class Status extends ImmutablePureComponent {
       );
     }
 
+    const ancestorsIds = threads[0].threadAncestorsIds;
+    const descendantsIds = threads[0].threadDescendantsIds;
+
     if (ancestorsIds && ancestorsIds.size > 0) {
       ancestors = <div>{this.renderChildren(ancestorsIds)}</div>;
     }
@@ -517,6 +559,8 @@ class Status extends ImmutablePureComponent {
     if (descendantsIds && descendantsIds.size > 0) {
       descendants = <div>{this.renderChildren(descendantsIds)}</div>;
     }
+
+    console.log(JSON.parse(JSON.stringify(status)))
 
     const handlers = {
       moveUp: this.handleHotkeyMoveUp,
@@ -544,7 +588,6 @@ class Status extends ImmutablePureComponent {
         <ScrollContainer scrollKey='thread' shouldUpdateScroll={shouldUpdateScroll}>
           <div className={classNames('scrollable', { fullscreen })} ref={this.setRef}>
             {ancestors}
-
             <HotKeys handlers={handlers}>
               <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, status, false)}>
                 <DetailedStatus
