@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import ImmutablePureComponent from 'react-immutable-pure-component';
 import ConversationContainer from '../containers/conversation_container';
-import ConversationUserContainer from '../containers/conversation_user_container';
 import ScrollableList from '../../../components/scrollable_list';
 import { debounce } from 'lodash';
 
@@ -59,24 +58,12 @@ export default class ConversationsList extends ImmutablePureComponent {
   render() {
     const { conversations, onLoadMore, ...other } = this.props;
 
-    const threadArray = JSON.parse(JSON.stringify(conversations));
-    const conversationsMap = {};
-    for (let thread of threadArray) {
-      if (!conversationsMap[thread.accounts[0]]) {
-        conversationsMap[thread.accounts[0]] = [thread];
-      } else {
-        conversationsMap[thread.accounts[0]].push(thread);
-      }
-    }
-    const conversationsUsers = Object.values(conversationsMap)
-
     return (
       <ScrollableList {...other} onLoadMore={onLoadMore && this.handleLoadOlder} ref={this.setRef}>
-        {conversationsUsers.map((user, index) => (
-          <ConversationUserContainer
-            key={user[0].id}
-            conversationId={user[0].id}
-            conversationsUsers={conversationsUsers[index]}
+        {conversations.map(item => (
+          <ConversationContainer
+            key={item.get('id')}
+            conversationId={item.get('id')}
             onMoveUp={this.handleMoveUp}
             onMoveDown={this.handleMoveDown}
             scrollKey={this.props.scrollKey}
