@@ -58,6 +58,7 @@ import { boostModal, deleteModal } from '../../initial_state';
 import { attachFullscreenListener, detachFullscreenListener, isFullscreen } from '../ui/util/fullscreen';
 import { textForScreenReader, defaultMediaVisibility } from '../../components/status';
 import Icon from 'mastodon/components/icon';
+import { set } from 'lodash';
 
 const THREADS_IDS = ['107573073420646722', '107573068830442733']
 
@@ -138,17 +139,17 @@ const makeMapStateToProps = () => {
     const accountId = props.params.statusId
     const conversations = JSON.parse(JSON.stringify(state)).conversations.items;
 
-    const conversationsArray = JSON.parse(JSON.stringify(conversations))
-    const conversationsObj = {}
+    const conversationsArray = JSON.parse(JSON.stringify(conversations));
+    const conversationsObj = {};
     for (let conv of conversationsArray) {
       if (!conversationsObj[conv.accounts[0]]) {
-        conversationsObj[conv.accounts[0]] = { ...conv, threads: [conv.last_status] }
+        conversationsObj[conv.accounts[0]] = { ...conv, threads: [conv.last_status] };
       }
       else {
-        conversationsObj[conv.accounts[0]].threads.push(conv.last_status)
+        conversationsObj[conv.accounts[0]].threads.push(conv.last_status);
       }
     }
-    const currentConversation = conversationsObj[accountId]
+    const currentConversation = conversationsObj[accountId];
 
     let ancestorsIds = Immutable.List();
     let descendantsIds = Immutable.List();
@@ -158,7 +159,7 @@ const makeMapStateToProps = () => {
       descendantsIds = getDescendantsIds(state, { id: status.get('id') });
     }
 
-    const threads = []
+    let threads = [];
     if (currentConversation) {
       for (let threadId of currentConversation.threads) {
         const thread = getStatus(state, { id: threadId });
@@ -167,11 +168,22 @@ const makeMapStateToProps = () => {
 
         if (thread) {
           threadAncestorsIds = getAncestorsIds(state, { id: thread.get('in_reply_to_id') });
-          threadDescendantsIds = getDescendantsIds(state, { id: thread.get('id') });
-          threads.push({ thread, threadAncestorsIds, threadDescendantsIds })
+
+          let firstStatus = thread;
+          if (threadAncestorsIds.size !== 0) {
+            const firstStatusId = threadAncestorsIds.get(0)
+            firstStatus = getStatus(state, { id: firstStatusId });
+          }
+
+          if (firstStatus) {
+            threadDescendantsIds = getDescendantsIds(state, { id: firstStatus.get('id') });
+            threads.push({ thread: firstStatus, threadAncestorsIds, threadDescendantsIds });
+          }
         }
       }
     }
+    threads.sort((a, b) => a.thread.get('id') - b.thread.get('id'))
+
     return {
       threads,
       status,
@@ -213,7 +225,7 @@ class Status extends ImmutablePureComponent {
     fullscreen: false,
     showMedia: defaultMediaVisibility(this.props.status),
     loadedStatusId: undefined,
-    loadedThreads: false
+    showRepliesThreads: []
   };
 
   componentWillMount() {
@@ -231,9 +243,6 @@ class Status extends ImmutablePureComponent {
 
   componentDidMount() {
     attachFullscreenListener(this.onFullScreenChange);
-
-    // this.props.dispatch(fetchStatus(this.props.params.statusId));
-    this.setState({ loadedThreads: !this.state.loadedThreads })
     console.log('did mount')
   }
 
@@ -618,7 +627,7 @@ class Status extends ImmutablePureComponent {
 
                 return (
                   <div key={thread.thread.get('id')}>
-                    {threadAncestors}
+                    {/* {threadAncestors} */}
                     <HotKeys handlers={handlers}>
                       <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, thread.thread, false)}>
                         <DetailedStatus
@@ -655,7 +664,17 @@ class Status extends ImmutablePureComponent {
                         />
                       </div>
                     </HotKeys>
-                    {threadDescendants}
+                    <button onClick={() => {
+                      const showRepliesThreads = this.state.showRepliesThreads;
+                      const threadId = thread.thread.get('id')
+
+                      if (!showRepliesThreads.includes(threadId)) this.setState({ showRepliesThreads: [...showRepliesThreads, threadId] })
+                      else {
+                        const filterShowRepliesThreads = showRepliesThreads.filter(t => t !== threadId)
+                        this.setState({ showRepliesThreads: filterShowRepliesThreads })
+                      }
+                    }}>Show Replies</button>
+                    {this.state.showRepliesThreads.includes(thread.thread.get('id')) ? threadDescendants : <></>}
                   </div>
                 )
               })

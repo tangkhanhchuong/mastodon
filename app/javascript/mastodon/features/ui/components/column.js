@@ -25,7 +25,7 @@ export default class Column extends React.PureComponent {
     this._interruptScrollAnimation = scrollTop(scrollable);
   }
 
-  scrollTop () {
+  scrollTop() {
     const scrollable = this.node.querySelector('.scrollable');
 
     if (!scrollable) {
@@ -46,7 +46,7 @@ export default class Column extends React.PureComponent {
     this.node = c;
   }
 
-  render () {
+  render() {
     const { heading, icon, children, active, hideHeadingOnMobile } = this.props;
 
     const showHeading = heading && (!hideHeadingOnMobile || (hideHeadingOnMobile && !isMobile(window.innerWidth)));
