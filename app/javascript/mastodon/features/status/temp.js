@@ -135,6 +135,7 @@ const makeMapStateToProps = () => {
   const mapStateToProps = (state, props) => {
     const status = getStatus(state, { id: props.params.statusId });
 
+    //
     const accountId = props.params.statusId
     const conversations = JSON.parse(JSON.stringify(state)).conversations.items;
 
@@ -150,12 +151,15 @@ const makeMapStateToProps = () => {
     }
     const currentConversation = conversationsObj[accountId]
 
+    //
+
     let ancestorsIds = Immutable.List();
     let descendantsIds = Immutable.List();
 
     if (status) {
       ancestorsIds = getAncestorsIds(state, { id: status.get('in_reply_to_id') });
       descendantsIds = getDescendantsIds(state, { id: status.get('id') });
+      console.log({ ancestorsIds, descendantsIds })
     }
 
     const threads = []
@@ -172,6 +176,17 @@ const makeMapStateToProps = () => {
         }
       }
     }
+    // for (let threadId of THREADS_IDS) {
+    //   const thread = getStatus(state, { id: threadId });
+    //   let threadAncestorsIds = Immutable.List();
+    //   let threadDescendantsIds = Immutable.List();
+
+    //   if (thread) {
+    //     threadAncestorsIds = getAncestorsIds(state, { id: thread.get('in_reply_to_id') });
+    //     threadDescendantsIds = getDescendantsIds(state, { id: thread.get('id') });
+    //     threads.push({ thread, threadAncestorsIds, threadDescendantsIds })
+    //   }
+    // }
     return {
       threads,
       status,
@@ -186,6 +201,8 @@ const makeMapStateToProps = () => {
   return mapStateToProps;
 };
 
+export default @injectIntl
+@connect(makeMapStateToProps)
 class Status extends ImmutablePureComponent {
 
   static contextTypes = {
@@ -213,65 +230,30 @@ class Status extends ImmutablePureComponent {
     fullscreen: false,
     showMedia: defaultMediaVisibility(this.props.status),
     loadedStatusId: undefined,
-    loadedThreads: false
   };
 
   componentWillMount() {
-    const { dispatch, threads } = this.props;
+    console.log('will mount')
+    const { dispatch } = this.props;
 
     dispatch(mountConversations());
     dispatch(expandConversations());
-
-    if (threads) {
-      for (let thread of threads) {
-        dispatch(fetchStatus(thread.thread.get('id')));
-      }
-    }
+    this.props.dispatch(fetchStatus(this.props.params.statusId));
   }
 
   componentDidMount() {
-    attachFullscreenListener(this.onFullScreenChange);
-
-    // this.props.dispatch(fetchStatus(this.props.params.statusId));
-    this.setState({ loadedThreads: !this.state.loadedThreads })
     console.log('did mount')
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (this._scrolledIntoView) {
-      return;
-    }
-
-    const { status, ancestorsIds, threads } = this.props;
-
-    if (status && ancestorsIds && ancestorsIds.size > 0) {
-      const element = this.node.querySelectorAll('.focusable')[ancestorsIds.size - 1];
-
-      window.requestAnimationFrame(() => {
-        element.scrollIntoView(true);
-      });
-      this._scrolledIntoView = true;
-    }
-
-    if (threads && threads.length !== prevProps.threads.length) {
-      for (let thread of threads) {
-        this.props.dispatch(fetchStatus(thread.thread.get('id')));
-      }
-    }
-  }
-
-  componentWillUnmount() {
-    detachFullscreenListener(this.onFullScreenChange);
+    attachFullscreenListener(this.onFullScreenChange);
   }
 
   componentWillReceiveProps(nextProps) {
+    console.log('will receive')
     if (nextProps.params.statusId !== this.props.params.statusId && nextProps.params.statusId) {
       this._scrolledIntoView = false;
       this.props.dispatch(fetchStatus(nextProps.params.statusId));
     }
 
     if (nextProps.status && nextProps.status.get('id') !== this.state.loadedStatusId) {
-      console.log('will receive props3')
       this.setState({ showMedia: defaultMediaVisibility(nextProps.status), loadedStatusId: nextProps.status.get('id') });
     }
   }
@@ -545,6 +527,29 @@ class Status extends ImmutablePureComponent {
     this.node = c;
   }
 
+  componentDidUpdate() {
+    if (this._scrolledIntoView) {
+      return;
+    }
+
+    console.log('did update')
+
+    const { status, ancestorsIds } = this.props;
+
+    if (status && ancestorsIds && ancestorsIds.size > 0) {
+      const element = this.node.querySelectorAll('.focusable')[ancestorsIds.size - 1];
+
+      window.requestAnimationFrame(() => {
+        element.scrollIntoView(true);
+      });
+      this._scrolledIntoView = true;
+    }
+  }
+
+  componentWillUnmount() {
+    detachFullscreenListener(this.onFullScreenChange);
+  }
+
   onFullScreenChange = () => {
     this.setState({ fullscreen: isFullscreen() });
   }
@@ -593,6 +598,8 @@ class Status extends ImmutablePureComponent {
       openMedia: this.handleHotkeyOpenMedia,
     };
 
+    console.log(JSON.parse(JSON.stringify(threads)))
+
     return (
       <Column bindToDocument={!multiColumn} label={intl.formatMessage(messages.detailedStatus)}>
         <ColumnHeader
@@ -617,7 +624,7 @@ class Status extends ImmutablePureComponent {
                 }
 
                 return (
-                  <div key={thread.thread.get('id')}>
+                  <div key={thread.thread.id}>
                     {threadAncestors}
                     <HotKeys handlers={handlers}>
                       <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, thread.thread, false)}>
@@ -705,6 +712,3 @@ class Status extends ImmutablePureComponent {
   }
 
 }
-
-
-export default injectIntl(connect(makeMapStateToProps)(Status))

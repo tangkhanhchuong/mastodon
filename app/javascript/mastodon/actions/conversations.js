@@ -5,19 +5,19 @@ import {
   importFetchedStatus,
 } from './importer';
 
-export const CONVERSATIONS_MOUNT   = 'CONVERSATIONS_MOUNT';
+export const CONVERSATIONS_MOUNT = 'CONVERSATIONS_MOUNT';
 export const CONVERSATIONS_UNMOUNT = 'CONVERSATIONS_UNMOUNT';
 
 export const CONVERSATIONS_FETCH_REQUEST = 'CONVERSATIONS_FETCH_REQUEST';
 export const CONVERSATIONS_FETCH_SUCCESS = 'CONVERSATIONS_FETCH_SUCCESS';
-export const CONVERSATIONS_FETCH_FAIL    = 'CONVERSATIONS_FETCH_FAIL';
-export const CONVERSATIONS_UPDATE        = 'CONVERSATIONS_UPDATE';
+export const CONVERSATIONS_FETCH_FAIL = 'CONVERSATIONS_FETCH_FAIL';
+export const CONVERSATIONS_UPDATE = 'CONVERSATIONS_UPDATE';
 
 export const CONVERSATIONS_READ = 'CONVERSATIONS_READ';
 
 export const CONVERSATIONS_DELETE_REQUEST = 'CONVERSATIONS_DELETE_REQUEST';
 export const CONVERSATIONS_DELETE_SUCCESS = 'CONVERSATIONS_DELETE_SUCCESS';
-export const CONVERSATIONS_DELETE_FAIL    = 'CONVERSATIONS_DELETE_FAIL';
+export const CONVERSATIONS_DELETE_FAIL = 'CONVERSATIONS_DELETE_FAIL';
 
 export const mountConversations = () => ({
   type: CONVERSATIONS_MOUNT,
@@ -37,6 +37,7 @@ export const markConversationRead = conversationId => (dispatch, getState) => {
 };
 
 export const expandConversations = ({ maxId } = {}) => (dispatch, getState) => {
+  console.log('expand')
   dispatch(expandConversationsRequest());
 
   const params = { max_id: maxId };
@@ -50,7 +51,6 @@ export const expandConversations = ({ maxId } = {}) => (dispatch, getState) => {
   api(getState).get('/api/v1/conversations', { params })
     .then(response => {
       const next = getLinks(response).refs.find(link => link.rel === 'next');
-
       dispatch(importFetchedAccounts(response.data.reduce((aggr, item) => aggr.concat(item.accounts), [])));
       dispatch(importFetchedStatuses(response.data.map(item => item.last_status).filter(x => !!x)));
       dispatch(expandConversationsSuccess(response.data, next ? next.uri : null, isLoadingRecent));

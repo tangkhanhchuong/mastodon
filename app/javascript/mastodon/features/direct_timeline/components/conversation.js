@@ -35,7 +35,7 @@ class Conversation extends ImmutablePureComponent {
     conversationId: PropTypes.string.isRequired,
     accounts: ImmutablePropTypes.list.isRequired,
     lastStatus: ImmutablePropTypes.map,
-    unread:PropTypes.bool.isRequired,
+    unread: PropTypes.bool.isRequired,
     scrollKey: PropTypes.string,
     onMoveUp: PropTypes.func,
     onMoveDown: PropTypes.func,
@@ -75,13 +75,16 @@ class Conversation extends ImmutablePureComponent {
       return;
     }
 
-    const { lastStatus, unread, markRead } = this.props;
+    const { lastStatus, unread, markRead, conversation, accounts } = this.props;
+
+    const accountId = accounts.get(0).get('id');
 
     if (unread) {
       markRead();
     }
 
-    this.context.router.history.push(`/statuses/${lastStatus.get('id')}`);
+    // this.context.router.history.push(`/statuses/${lastStatus.get('id')}`);
+    this.context.router.history.push(`/statuses/${accountId}`);
   }
 
   handleMarkAsRead = () => {
@@ -112,7 +115,7 @@ class Conversation extends ImmutablePureComponent {
     this.props.onToggleHidden(this.props.lastStatus);
   }
 
-  render () {
+  render() {
     const { accounts, lastStatus, unread, scrollKey, intl } = this.props;
 
     if (lastStatus === null) {
