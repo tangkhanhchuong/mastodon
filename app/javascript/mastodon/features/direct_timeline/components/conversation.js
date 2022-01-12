@@ -75,16 +75,13 @@ class Conversation extends ImmutablePureComponent {
       return;
     }
 
-    const { lastStatus, unread, markRead, conversation, accounts } = this.props;
-
-    const accountId = accounts.get(0).get('id');
+    const { lastStatus, unread, markRead } = this.props;
 
     if (unread) {
       markRead();
     }
 
-    // this.context.router.history.push(`/statuses/${lastStatus.get('id')}`);
-    this.context.router.history.push(`/statuses/${accountId}`);
+    this.context.router.history.push(`/statuses/${lastStatus.get('id')}`);
   }
 
   handleMarkAsRead = () => {

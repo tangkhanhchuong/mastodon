@@ -1,3 +1,5 @@
+
+
 import Immutable from 'immutable';
 import React from 'react';
 import { connect } from 'react-redux';
@@ -10,7 +12,6 @@ import MissingIndicator from '../../components/missing_indicator';
 import DetailedStatus from './components/detailed_status';
 import ActionBar from './components/action_bar';
 import Column from '../ui/components/column';
-import { mountConversations, expandConversations } from '../../actions/conversations';
 import {
   favourite,
   unfavourite,
@@ -58,9 +59,6 @@ import { boostModal, deleteModal } from '../../initial_state';
 import { attachFullscreenListener, detachFullscreenListener, isFullscreen } from '../ui/util/fullscreen';
 import { textForScreenReader, defaultMediaVisibility } from '../../components/status';
 import Icon from 'mastodon/components/icon';
-import { set } from 'lodash';
-
-const THREADS_IDS = ['107573073420646722', '107573068830442733']
 
 const messages = defineMessages({
   deleteConfirm: { id: 'confirmations.delete.confirm', defaultMessage: 'Delete' },
@@ -136,21 +134,6 @@ const makeMapStateToProps = () => {
   const mapStateToProps = (state, props) => {
     const status = getStatus(state, { id: props.params.statusId });
 
-    const accountId = props.params.statusId
-    const conversations = JSON.parse(JSON.stringify(state)).conversations.items;
-
-    const conversationsArray = JSON.parse(JSON.stringify(conversations));
-    const conversationsObj = {};
-    for (let conv of conversationsArray) {
-      if (!conversationsObj[conv.accounts[0]]) {
-        conversationsObj[conv.accounts[0]] = { ...conv, threads: [conv.last_status] };
-      }
-      else {
-        conversationsObj[conv.accounts[0]].threads.push(conv.last_status);
-      }
-    }
-    const currentConversation = conversationsObj[accountId];
-
     let ancestorsIds = Immutable.List();
     let descendantsIds = Immutable.List();
 
@@ -159,33 +142,7 @@ const makeMapStateToProps = () => {
       descendantsIds = getDescendantsIds(state, { id: status.get('id') });
     }
 
-    let threads = [];
-    if (currentConversation) {
-      for (let threadId of currentConversation.threads) {
-        const thread = getStatus(state, { id: threadId });
-        let threadAncestorsIds = Immutable.List();
-        let threadDescendantsIds = Immutable.List();
-
-        if (thread) {
-          threadAncestorsIds = getAncestorsIds(state, { id: thread.get('in_reply_to_id') });
-
-          let firstStatus = thread;
-          if (threadAncestorsIds.size !== 0) {
-            const firstStatusId = threadAncestorsIds.get(0)
-            firstStatus = getStatus(state, { id: firstStatusId });
-          }
-
-          if (firstStatus) {
-            threadDescendantsIds = getDescendantsIds(state, { id: firstStatus.get('id') });
-            threads.push({ thread: firstStatus, threadAncestorsIds, threadDescendantsIds });
-          }
-        }
-      }
-    }
-    threads.sort((a, b) => a.thread.get('id') - b.thread.get('id'))
-
     return {
-      threads,
       status,
       ancestorsIds,
       descendantsIds,
@@ -198,6 +155,8 @@ const makeMapStateToProps = () => {
   return mapStateToProps;
 };
 
+export default @injectIntl
+@connect(makeMapStateToProps)
 class Status extends ImmutablePureComponent {
 
   static contextTypes = {
@@ -218,59 +177,20 @@ class Status extends ImmutablePureComponent {
       inUse: PropTypes.bool,
       available: PropTypes.bool,
     }),
-    threads: PropTypes.array
   };
 
   state = {
     fullscreen: false,
     showMedia: defaultMediaVisibility(this.props.status),
     loadedStatusId: undefined,
-    showRepliesThreads: []
   };
 
   componentWillMount() {
-    const { dispatch, threads } = this.props;
-
-    dispatch(mountConversations());
-    dispatch(expandConversations());
-
-    if (threads) {
-      for (let thread of threads) {
-        dispatch(fetchStatus(thread.thread.get('id')));
-      }
-    }
+    this.props.dispatch(fetchStatus(this.props.params.statusId));
   }
 
   componentDidMount() {
     attachFullscreenListener(this.onFullScreenChange);
-    console.log('did mount')
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (this._scrolledIntoView) {
-      return;
-    }
-
-    const { status, ancestorsIds, threads } = this.props;
-
-    if (status && ancestorsIds && ancestorsIds.size > 0) {
-      const element = this.node.querySelectorAll('.focusable')[ancestorsIds.size - 1];
-
-      window.requestAnimationFrame(() => {
-        element.scrollIntoView(true);
-      });
-      this._scrolledIntoView = true;
-    }
-
-    if (threads && threads.length !== prevProps.threads.length) {
-      for (let thread of threads) {
-        this.props.dispatch(fetchStatus(thread.thread.get('id')));
-      }
-    }
-  }
-
-  componentWillUnmount() {
-    detachFullscreenListener(this.onFullScreenChange);
   }
 
   componentWillReceiveProps(nextProps) {
@@ -280,7 +200,6 @@ class Status extends ImmutablePureComponent {
     }
 
     if (nextProps.status && nextProps.status.get('id') !== this.state.loadedStatusId) {
-      console.log('will receive props3')
       this.setState({ showMedia: defaultMediaVisibility(nextProps.status), loadedStatusId: nextProps.status.get('id') });
     }
   }
@@ -554,16 +473,37 @@ class Status extends ImmutablePureComponent {
     this.node = c;
   }
 
+  componentDidUpdate() {
+    if (this._scrolledIntoView) {
+      return;
+    }
+
+    const { status, ancestorsIds } = this.props;
+
+    if (status && ancestorsIds && ancestorsIds.size > 0) {
+      const element = this.node.querySelectorAll('.focusable')[ancestorsIds.size - 1];
+
+      window.requestAnimationFrame(() => {
+        element.scrollIntoView(true);
+      });
+      this._scrolledIntoView = true;
+    }
+  }
+
+  componentWillUnmount() {
+    detachFullscreenListener(this.onFullScreenChange);
+  }
+
   onFullScreenChange = () => {
     this.setState({ fullscreen: isFullscreen() });
   }
 
   render() {
     let ancestors, descendants;
-    const { shouldUpdateScroll, status, ancestorsIds, descendantsIds, intl, domain, multiColumn, pictureInPicture, threads } = this.props;
+    const { shouldUpdateScroll, status, ancestorsIds, descendantsIds, intl, domain, multiColumn, pictureInPicture } = this.props;
     const { fullscreen } = this.state;
 
-    if (threads === null || threads.length === 0) {
+    if (status === null) {
       return (
         <Column>
           <ColumnBackButton multiColumn={multiColumn} />
@@ -572,22 +512,13 @@ class Status extends ImmutablePureComponent {
       );
     }
 
-    // if (status === null) {
-    //   return (
-    //     <Column>
-    //       <ColumnBackButton multiColumn={multiColumn} />
-    //       <MissingIndicator />
-    //     </Column>
-    //   );
-    // }
+    if (ancestorsIds && ancestorsIds.size > 0) {
+      ancestors = <div>{this.renderChildren(ancestorsIds)}</div>;
+    }
 
-    // if (ancestorsIds && ancestorsIds.size > 0) {
-    //   ancestors = <div>{this.renderChildren(ancestorsIds)}</div>;
-    // }
-
-    // if (descendantsIds && descendantsIds.size > 0) {
-    //   descendants = <div>{this.renderChildren(descendantsIds)}</div>;
-    // }
+    if (descendantsIds && descendantsIds.size > 0) {
+      descendants = <div>{this.renderChildren(descendantsIds)}</div>;
+    }
 
     const handlers = {
       moveUp: this.handleHotkeyMoveUp,
@@ -607,79 +538,15 @@ class Status extends ImmutablePureComponent {
         <ColumnHeader
           showBackButton
           multiColumn={multiColumn}
-        // extraButton={(
-        //   <button className='column-header__button' title={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} aria-label={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} onClick={this.handleToggleAll} aria-pressed={status.get('hidden') ? 'false' : 'true'}><Icon id={status.get('hidden') ? 'eye-slash' : 'eye'} /></button>
-        // )}
+          extraButton={(
+            <button className='column-header__button' title={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} aria-label={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} onClick={this.handleToggleAll} aria-pressed={status.get('hidden') ? 'false' : 'true'}><Icon id={status.get('hidden') ? 'eye-slash' : 'eye'} /></button>
+          )}
         />
 
         <ScrollContainer scrollKey='thread' shouldUpdateScroll={shouldUpdateScroll}>
           <div className={classNames('scrollable', { fullscreen })} ref={this.setRef}>
-            {
-              threads.map(thread => {
-                let threadAncestors, threadDescendants;
-                if (thread.threadAncestorsIds && thread.threadAncestorsIds.size > 0) {
-                  threadAncestors = <div>{this.renderChildren(thread.threadAncestorsIds)}</div>;
-                }
+            {ancestors}
 
-                if (thread.threadDescendantsIds && thread.threadDescendantsIds.size > 0) {
-                  threadDescendants = <div>{this.renderChildren(thread.threadDescendantsIds)}</div>;
-                }
-
-                return (
-                  <div key={thread.thread.get('id')}>
-                    {/* {threadAncestors} */}
-                    <HotKeys handlers={handlers}>
-                      <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, thread.thread, false)}>
-                        <DetailedStatus
-                          key={`details-${thread.thread.get('id')}`}
-                          status={thread.thread}
-                          onOpenVideo={this.handleOpenVideo}
-                          onOpenMedia={this.handleOpenMedia}
-                          onToggleHidden={this.handleToggleHidden}
-                          domain={domain}
-                          showMedia={this.state.showMedia}
-                          onToggleMediaVisibility={this.handleToggleMediaVisibility}
-                          pictureInPicture={pictureInPicture}
-                        />
-                        <ActionBar
-                          key={`action-bar-${thread.thread.get('id')}`}
-                          status={thread.thread}
-                          onReply={this.handleReplyClick}
-                          onFavourite={this.handleFavouriteClick}
-                          onReblog={this.handleReblogClick}
-                          onBookmark={this.handleBookmarkClick}
-                          onDelete={this.handleDeleteClick}
-                          onDirect={this.handleDirectClick}
-                          onMention={this.handleMentionClick}
-                          onMute={this.handleMuteClick}
-                          onUnmute={this.handleUnmuteClick}
-                          onMuteConversation={this.handleConversationMuteClick}
-                          onBlock={this.handleBlockClick}
-                          onUnblock={this.handleUnblockClick}
-                          onBlockDomain={this.handleBlockDomainClick}
-                          onUnblockDomain={this.handleUnblockDomainClick}
-                          onReport={this.handleReport}
-                          onPin={this.handlePin}
-                          onEmbed={this.handleEmbed}
-                        />
-                      </div>
-                    </HotKeys>
-                    <button onClick={() => {
-                      const showRepliesThreads = this.state.showRepliesThreads;
-                      const threadId = thread.thread.get('id')
-
-                      if (!showRepliesThreads.includes(threadId)) this.setState({ showRepliesThreads: [...showRepliesThreads, threadId] })
-                      else {
-                        const filterShowRepliesThreads = showRepliesThreads.filter(t => t !== threadId)
-                        this.setState({ showRepliesThreads: filterShowRepliesThreads })
-                      }
-                    }}>Show Replies</button>
-                    {this.state.showRepliesThreads.includes(thread.thread.get('id')) ? threadDescendants : <></>}
-                  </div>
-                )
-              })
-            }
-            {/* {ancestors}
             <HotKeys handlers={handlers}>
               <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, status, false)}>
                 <DetailedStatus
@@ -693,6 +560,7 @@ class Status extends ImmutablePureComponent {
                   onToggleMediaVisibility={this.handleToggleMediaVisibility}
                   pictureInPicture={pictureInPicture}
                 />
+
                 <ActionBar
                   key={`action-bar-${status.get('id')}`}
                   status={status}
@@ -716,7 +584,8 @@ class Status extends ImmutablePureComponent {
                 />
               </div>
             </HotKeys>
-            {descendants} */}
+
+            {descendants}
           </div>
         </ScrollContainer>
       </Column>
@@ -724,6 +593,3 @@ class Status extends ImmutablePureComponent {
   }
 
 }
-
-
-export default injectIntl(connect(makeMapStateToProps)(Status))

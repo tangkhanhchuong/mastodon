@@ -58,25 +58,12 @@ export default class ConversationsList extends ImmutablePureComponent {
   render() {
     const { conversations, onLoadMore, ...other } = this.props;
 
-    const conversationsArray = JSON.parse(JSON.stringify(conversations))
-    const conversationsObj = {}
-    for (let conv of conversationsArray) {
-      if (!conversationsObj[conv.accounts[0]]) {
-        conversationsObj[conv.accounts[0]] = { ...conv, threads: [conv.last_status] }
-      }
-      else {
-        conversationsObj[conv.accounts[0]].threads.push(conv.last_status)
-      }
-    }
-    const conversationsArrayByUser = Object.values(conversationsObj)
-
     return (
       <ScrollableList {...other} onLoadMore={onLoadMore && this.handleLoadOlder} ref={this.setRef}>
-        {conversationsArrayByUser.map(item => (
+        {conversations.map(item => (
           <ConversationContainer
-            key={item.id}
-            conversationId={item.id}
-            conversation={item}
+            key={item.get('id')}
+            conversationId={item.get('id')}
             onMoveUp={this.handleMoveUp}
             onMoveDown={this.handleMoveDown}
             scrollKey={this.props.scrollKey}

@@ -1,5 +1,5 @@
 import { connect } from 'react-redux';
-import ConversationUser from '../components/conversation_user';
+import Conversation from '../components/conversation';
 import { markConversationRead, deleteConversation } from 'mastodon/actions/conversations';
 import { makeGetStatus } from 'mastodon/selectors';
 import { replyCompose } from 'mastodon/actions/compose';
@@ -15,8 +15,7 @@ const messages = defineMessages({
 const mapStateToProps = () => {
   const getStatus = makeGetStatus();
 
-  return (state, { conversationId, conversationsUsers }) => {
-
+  return (state, { conversationId }) => {
     const conversation = state.getIn(['conversations', 'items']).find(x => x.get('id') === conversationId);
     const lastStatusId = conversation.get('last_status', null);
 
@@ -28,15 +27,13 @@ const mapStateToProps = () => {
   };
 };
 
-const mapDispatchToProps = (dispatch, { intl, conversationId, lastStatuses, threadsId }) => ({
+const mapDispatchToProps = (dispatch, { intl, conversationId }) => ({
 
-  markRead() {
-    // for (let threadId of threadsId) {
-    //   dispatch(markConversationRead(threadId));
-    // }
+  markRead () {
+    dispatch(markConversationRead(conversationId));
   },
 
-  reply(status, router) {
+  reply (status, router) {
     dispatch((_, getState) => {
       let state = getState();
 
@@ -52,11 +49,11 @@ const mapDispatchToProps = (dispatch, { intl, conversationId, lastStatuses, thre
     });
   },
 
-  delete() {
+  delete () {
     dispatch(deleteConversation(conversationId));
   },
 
-  onMute(status) {
+  onMute (status) {
     if (status.get('muted')) {
       dispatch(unmuteStatus(status.get('id')));
     } else {
@@ -64,7 +61,7 @@ const mapDispatchToProps = (dispatch, { intl, conversationId, lastStatuses, thre
     }
   },
 
-  onToggleHidden(status) {
+  onToggleHidden (status) {
     if (status.get('hidden')) {
       dispatch(revealStatus(status.get('id')));
     } else {
@@ -74,4 +71,4 @@ const mapDispatchToProps = (dispatch, { intl, conversationId, lastStatuses, thre
 
 });
 
-export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(ConversationUser));
+export default injectIntl(connect(mapStateToProps, mapDispatchToProps)(Conversation));

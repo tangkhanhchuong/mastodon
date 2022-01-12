@@ -5,12 +5,12 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import { createSelector } from 'reselect';
-import { fetchStatus } from '../../actions/statuses';
-import MissingIndicator from '../../components/missing_indicator';
+import { fetchStatus } from '../../../actions/statuses';
+import MissingIndicator from '../../../components/missing_indicator';
 import DetailedStatus from './components/detailed_status';
 import ActionBar from './components/action_bar';
-import Column from '../ui/components/column';
-import { mountConversations, expandConversations } from '../../actions/conversations';
+import Column from '../../ui/components/column';
+import { mountConversations, expandConversations } from '../../../actions/conversations';
 import {
   favourite,
   unfavourite,
@@ -20,44 +20,45 @@ import {
   unreblog,
   pin,
   unpin,
-} from '../../actions/interactions';
+} from '../../../actions/interactions';
 import {
   replyCompose,
   mentionCompose,
   directCompose,
-} from '../../actions/compose';
+} from '../../../actions/compose';
 import {
   muteStatus,
   unmuteStatus,
   deleteStatus,
   hideStatus,
   revealStatus,
-} from '../../actions/statuses';
+} from '../../../actions/statuses';
 import {
   unblockAccount,
   unmuteAccount,
-} from '../../actions/accounts';
+} from '../../../actions/accounts';
 import {
   blockDomain,
   unblockDomain,
-} from '../../actions/domain_blocks';
-import { initMuteModal } from '../../actions/mutes';
-import { initBlockModal } from '../../actions/blocks';
-import { initBoostModal } from '../../actions/boosts';
-import { initReport } from '../../actions/reports';
-import { makeGetStatus, makeGetPictureInPicture } from '../../selectors';
+} from '../../../actions/domain_blocks';
+import { initMuteModal } from '../../../actions/mutes';
+import { initBlockModal } from '../../../actions/blocks';
+import { initBoostModal } from '../../../actions/boosts';
+import { initReport } from '../../../actions/reports';
+import { makeGetStatus, makeGetPictureInPicture } from '../../../selectors';
 import { ScrollContainer } from 'react-router-scroll-4';
-import ColumnBackButton from '../../components/column_back_button';
-import ColumnHeader from '../../components/column_header';
-import StatusContainer from '../../containers/status_container';
-import { openModal } from '../../actions/modal';
+import ColumnBackButton from '../../../components/column_back_button';
+import ColumnHeader from '../../../components/column_header';
+import StatusContainer from '../../../containers/status_container';
+import { openModal } from '../../../actions/modal';
 import { defineMessages, injectIntl, FormattedMessage } from 'react-intl';
 import ImmutablePureComponent from 'react-immutable-pure-component';
 import { HotKeys } from 'react-hotkeys';
-import { boostModal, deleteModal } from '../../initial_state';
-import { attachFullscreenListener, detachFullscreenListener, isFullscreen } from '../ui/util/fullscreen';
-import { textForScreenReader, defaultMediaVisibility } from '../../components/status';
+import { boostModal, deleteModal } from '../../../initial_state';
+import { attachFullscreenListener, detachFullscreenListener, isFullscreen } from '../../ui/util/fullscreen';
+import { textForScreenReader, defaultMediaVisibility } from '../../../components/status';
 import Icon from 'mastodon/components/icon';
+import { set } from 'lodash';
 
 const THREADS_IDS = ['107573073420646722', '107573068830442733']
 
@@ -135,23 +136,20 @@ const makeMapStateToProps = () => {
   const mapStateToProps = (state, props) => {
     const status = getStatus(state, { id: props.params.statusId });
 
-    //
     const accountId = props.params.statusId
     const conversations = JSON.parse(JSON.stringify(state)).conversations.items;
 
-    const conversationsArray = JSON.parse(JSON.stringify(conversations))
-    const conversationsObj = {}
+    const conversationsArray = JSON.parse(JSON.stringify(conversations));
+    const conversationsObj = {};
     for (let conv of conversationsArray) {
       if (!conversationsObj[conv.accounts[0]]) {
-        conversationsObj[conv.accounts[0]] = { ...conv, threads: [conv.last_status] }
+        conversationsObj[conv.accounts[0]] = { ...conv, threads: [conv.last_status] };
       }
       else {
-        conversationsObj[conv.accounts[0]].threads.push(conv.last_status)
+        conversationsObj[conv.accounts[0]].threads.push(conv.last_status);
       }
     }
-    const currentConversation = conversationsObj[accountId]
-
-    //
+    const currentConversation = conversationsObj[accountId];
 
     let ancestorsIds = Immutable.List();
     let descendantsIds = Immutable.List();
@@ -159,10 +157,9 @@ const makeMapStateToProps = () => {
     if (status) {
       ancestorsIds = getAncestorsIds(state, { id: status.get('in_reply_to_id') });
       descendantsIds = getDescendantsIds(state, { id: status.get('id') });
-      console.log({ ancestorsIds, descendantsIds })
     }
 
-    const threads = []
+    let threads = [];
     if (currentConversation) {
       for (let threadId of currentConversation.threads) {
         const thread = getStatus(state, { id: threadId });
@@ -171,22 +168,22 @@ const makeMapStateToProps = () => {
 
         if (thread) {
           threadAncestorsIds = getAncestorsIds(state, { id: thread.get('in_reply_to_id') });
-          threadDescendantsIds = getDescendantsIds(state, { id: thread.get('id') });
-          threads.push({ thread, threadAncestorsIds, threadDescendantsIds })
+
+          let firstStatus = thread;
+          if (threadAncestorsIds.size !== 0) {
+            const firstStatusId = threadAncestorsIds.get(0)
+            firstStatus = getStatus(state, { id: firstStatusId });
+          }
+
+          if (firstStatus) {
+            threadDescendantsIds = getDescendantsIds(state, { id: firstStatus.get('id') });
+            threads.push({ thread: firstStatus, threadAncestorsIds, threadDescendantsIds });
+          }
         }
       }
     }
-    // for (let threadId of THREADS_IDS) {
-    //   const thread = getStatus(state, { id: threadId });
-    //   let threadAncestorsIds = Immutable.List();
-    //   let threadDescendantsIds = Immutable.List();
+    threads.sort((a, b) => a.thread.get('id') - b.thread.get('id'))
 
-    //   if (thread) {
-    //     threadAncestorsIds = getAncestorsIds(state, { id: thread.get('in_reply_to_id') });
-    //     threadDescendantsIds = getDescendantsIds(state, { id: thread.get('id') });
-    //     threads.push({ thread, threadAncestorsIds, threadDescendantsIds })
-    //   }
-    // }
     return {
       threads,
       status,
@@ -201,8 +198,6 @@ const makeMapStateToProps = () => {
   return mapStateToProps;
 };
 
-export default @injectIntl
-@connect(makeMapStateToProps)
 class Status extends ImmutablePureComponent {
 
   static contextTypes = {
@@ -230,30 +225,62 @@ class Status extends ImmutablePureComponent {
     fullscreen: false,
     showMedia: defaultMediaVisibility(this.props.status),
     loadedStatusId: undefined,
+    showRepliesThreads: []
   };
 
   componentWillMount() {
-    console.log('will mount')
-    const { dispatch } = this.props;
+    const { dispatch, threads } = this.props;
 
     dispatch(mountConversations());
     dispatch(expandConversations());
-    this.props.dispatch(fetchStatus(this.props.params.statusId));
+
+    if (threads) {
+      for (let thread of threads) {
+        dispatch(fetchStatus(thread.thread.get('id')));
+      }
+    }
   }
 
   componentDidMount() {
-    console.log('did mount')
     attachFullscreenListener(this.onFullScreenChange);
+    console.log('did mount')
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (this._scrolledIntoView) {
+      return;
+    }
+
+    const { status, ancestorsIds, threads } = this.props;
+
+    if (status && ancestorsIds && ancestorsIds.size > 0) {
+      const element = this.node.querySelectorAll('.focusable')[ancestorsIds.size - 1];
+
+      window.requestAnimationFrame(() => {
+        element.scrollIntoView(true);
+      });
+      this._scrolledIntoView = true;
+    }
+
+    if (threads && threads.length !== prevProps.threads.length) {
+      for (let thread of threads) {
+        this.props.dispatch(fetchStatus(thread.thread.get('id')));
+      }
+    }
+  }
+
+  componentWillUnmount() {
+    detachFullscreenListener(this.onFullScreenChange);
   }
 
   componentWillReceiveProps(nextProps) {
-    console.log('will receive')
     if (nextProps.params.statusId !== this.props.params.statusId && nextProps.params.statusId) {
       this._scrolledIntoView = false;
       this.props.dispatch(fetchStatus(nextProps.params.statusId));
     }
 
     if (nextProps.status && nextProps.status.get('id') !== this.state.loadedStatusId) {
+      console.log('will receive props3')
       this.setState({ showMedia: defaultMediaVisibility(nextProps.status), loadedStatusId: nextProps.status.get('id') });
     }
   }
@@ -527,29 +554,6 @@ class Status extends ImmutablePureComponent {
     this.node = c;
   }
 
-  componentDidUpdate() {
-    if (this._scrolledIntoView) {
-      return;
-    }
-
-    console.log('did update')
-
-    const { status, ancestorsIds } = this.props;
-
-    if (status && ancestorsIds && ancestorsIds.size > 0) {
-      const element = this.node.querySelectorAll('.focusable')[ancestorsIds.size - 1];
-
-      window.requestAnimationFrame(() => {
-        element.scrollIntoView(true);
-      });
-      this._scrolledIntoView = true;
-    }
-  }
-
-  componentWillUnmount() {
-    detachFullscreenListener(this.onFullScreenChange);
-  }
-
   onFullScreenChange = () => {
     this.setState({ fullscreen: isFullscreen() });
   }
@@ -598,8 +602,6 @@ class Status extends ImmutablePureComponent {
       openMedia: this.handleHotkeyOpenMedia,
     };
 
-    console.log(JSON.parse(JSON.stringify(threads)))
-
     return (
       <Column bindToDocument={!multiColumn} label={intl.formatMessage(messages.detailedStatus)}>
         <ColumnHeader
@@ -624,8 +626,8 @@ class Status extends ImmutablePureComponent {
                 }
 
                 return (
-                  <div key={thread.thread.id}>
-                    {threadAncestors}
+                  <div key={thread.thread.get('id')}>
+                    {/* {threadAncestors} */}
                     <HotKeys handlers={handlers}>
                       <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, thread.thread, false)}>
                         <DetailedStatus
@@ -662,7 +664,17 @@ class Status extends ImmutablePureComponent {
                         />
                       </div>
                     </HotKeys>
-                    {threadDescendants}
+                    <button onClick={() => {
+                      const showRepliesThreads = this.state.showRepliesThreads;
+                      const threadId = thread.thread.get('id')
+
+                      if (!showRepliesThreads.includes(threadId)) this.setState({ showRepliesThreads: [...showRepliesThreads, threadId] })
+                      else {
+                        const filterShowRepliesThreads = showRepliesThreads.filter(t => t !== threadId)
+                        this.setState({ showRepliesThreads: filterShowRepliesThreads })
+                      }
+                    }}>Show Replies</button>
+                    {this.state.showRepliesThreads.includes(thread.thread.get('id')) ? threadDescendants : <></>}
                   </div>
                 )
               })
@@ -712,3 +724,6 @@ class Status extends ImmutablePureComponent {
   }
 
 }
+
+
+export default injectIntl(connect(makeMapStateToProps)(Status))

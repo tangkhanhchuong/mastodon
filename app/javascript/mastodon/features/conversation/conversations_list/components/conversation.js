@@ -25,7 +25,7 @@ const messages = defineMessages({
 });
 
 export default @injectIntl
-class ConversationUser extends ImmutablePureComponent {
+class Conversation extends ImmutablePureComponent {
 
   static contextTypes = {
     router: PropTypes.object,
@@ -75,17 +75,16 @@ class ConversationUser extends ImmutablePureComponent {
       return;
     }
 
-    const { lastStatus, unread, markRead, lastStatuses, accounts } = this.props;
+    const { lastStatus, unread, markRead, conversation, accounts } = this.props;
+
+    const accountId = accounts.get(0).get('id');
 
     if (unread) {
       markRead();
     }
 
-    const userAccount = JSON.parse(JSON.stringify(accounts))[0];
-    const accountId = accounts.get(0).get('id');
-
     // this.context.router.history.push(`/statuses/${lastStatus.get('id')}`);
-    this.context.router.history.push(`/statuses/${accountId}`);
+    this.context.router.history.push(`/conversations/${accountId}`);
   }
 
   handleMarkAsRead = () => {
@@ -117,7 +116,7 @@ class ConversationUser extends ImmutablePureComponent {
   }
 
   render() {
-    const { accounts, lastStatus, unread, scrollKey, intl, threadsId } = this.props;
+    const { accounts, lastStatus, unread, scrollKey, intl } = this.props;
 
     if (lastStatus === null) {
       return null;
