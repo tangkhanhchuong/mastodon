@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import { Link } from 'react-router-dom';
 import Avatar from '../../../../components/avatar';
-import DisplayName from '../../../../components/display_name';
-import StatusContent from '../../../../components/status_content';
+import DisplayName from './display_name';
+import StatusContent from './status_content';
 import MediaGallery from '../../../../components/media_gallery';
 import { injectIntl, defineMessages, FormattedDate } from 'react-intl';
 import Card from './card';
@@ -16,6 +16,7 @@ import classNames from 'classnames';
 import Icon from 'mastodon/components/icon';
 import AnimatedNumber from 'mastodon/components/animated_number';
 import PictureInPicturePlaceholder from 'mastodon/components/picture_in_picture_placeholder';
+import RelativeTimestamp from 'mastodon/components/relative_timestamp';
 
 const messages = defineMessages({
   public_short: { id: 'privacy.public.short', defaultMessage: 'Public' },
@@ -240,12 +241,16 @@ class DetailedStatus extends ImmutablePureComponent {
     return (
       <div style={outerStyle}>
         <div ref={this.setRef} className={classNames('detailed-status', `detailed-status-${status.get('visibility')}`, { compact })}>
-          <a href={status.getIn(['account', 'url'])} onClick={this.handleAccountClick} className='detailed-status__display-name'>
+          <a href={status.getIn(['account', 'url'])} onClick={this.handleAccountClick} style={{ display: 'flex', flexDirection: 'row' }} className='detailed-status__display-name'>
             <div className='detailed-status__display-avatar'><Avatar account={status.get('account')} size={48} /></div>
-            <DisplayName account={status.get('account')} localDomain={this.props.domain} />
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <DisplayName account={status.get('account')} localDomain={this.props.domain} />
+              <StatusContent status={status} expanded={!status.get('hidden')} onExpandedToggle={this.handleExpandedToggle} />
+            </div>
+            {/* <RelativeTimestamp timestamp={status.get('created_at')} /> */}
           </a>
 
-          <StatusContent status={status} expanded={!status.get('hidden')} onExpandedToggle={this.handleExpandedToggle} />
+          {/* <StatusContent status={status} expanded={!status.get('hidden')} onExpandedToggle={this.handleExpandedToggle} /> */}
 
           {media}
 

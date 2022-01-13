@@ -2,11 +2,11 @@ import React from 'react';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
-import Permalink from './permalink';
 import classnames from 'classnames';
 import PollContainer from 'mastodon/containers/poll_container';
 import Icon from 'mastodon/components/icon';
 import { autoPlayGif } from 'mastodon/initial_state';
+import Permalink from '../../../../components/permalink';
 
 const MAX_HEIGHT = 642; // 20px * 32 (+ 2px padding at the top)
 
@@ -174,7 +174,9 @@ export default class StatusContent extends React.PureComponent {
     const renderReadMore = this.props.onClick && status.get('collapsed');
     const renderViewThread = this.props.showThread && status.get('in_reply_to_id') && status.get('in_reply_to_account_id') === status.getIn(['account', 'id']);
 
-    const content = { __html: status.get('contentHtml') };
+    // const content = { __html: status.get('contentHtml') };
+    const content = { __html: `<p>${status.get('contentHtml').split('</span>')[2].split('</p>')[0]}</p>` };
+    // console.log(messageContent, content)
     const spoilerContent = { __html: status.get('spoilerHtml') };
     const classNames = classnames('status__content', {
       'status__content--with-action': this.props.onClick && this.context.router,

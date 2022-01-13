@@ -1,11 +1,11 @@
 import { connect } from 'react-redux';
-import Conversation from '../components/conversation';
+import { defineMessages, injectIntl } from 'react-intl';
 import { markConversationRead, deleteConversation } from 'mastodon/actions/conversations';
 import { makeGetStatus } from 'mastodon/selectors';
 import { replyCompose } from 'mastodon/actions/compose';
 import { openModal } from 'mastodon/actions/modal';
 import { muteStatus, unmuteStatus, hideStatus, revealStatus } from 'mastodon/actions/statuses';
-import { defineMessages, injectIntl } from 'react-intl';
+import Conversation from '../components/conversation';
 
 const messages = defineMessages({
   replyConfirm: { id: 'confirmations.reply.confirm', defaultMessage: 'Reply' },
@@ -29,11 +29,11 @@ const mapStateToProps = () => {
 
 const mapDispatchToProps = (dispatch, { intl, conversationId }) => ({
 
-  markRead () {
+  markRead() {
     dispatch(markConversationRead(conversationId));
   },
 
-  reply (status, router) {
+  reply(status, router) {
     dispatch((_, getState) => {
       let state = getState();
 
@@ -49,11 +49,11 @@ const mapDispatchToProps = (dispatch, { intl, conversationId }) => ({
     });
   },
 
-  delete () {
+  delete() {
     dispatch(deleteConversation(conversationId));
   },
 
-  onMute (status) {
+  onMute(status) {
     if (status.get('muted')) {
       dispatch(unmuteStatus(status.get('id')));
     } else {
@@ -61,7 +61,7 @@ const mapDispatchToProps = (dispatch, { intl, conversationId }) => ({
     }
   },
 
-  onToggleHidden (status) {
+  onToggleHidden(status) {
     if (status.get('hidden')) {
       dispatch(revealStatus(status.get('id')));
     } else {

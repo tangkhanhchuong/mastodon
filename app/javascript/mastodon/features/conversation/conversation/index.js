@@ -1,14 +1,17 @@
-import Immutable from 'immutable';
+import { ScrollContainer } from 'react-router-scroll-4';
 import React from 'react';
 import { connect } from 'react-redux';
+import { defineMessages, injectIntl, FormattedMessage } from 'react-intl';
+import ImmutablePureComponent from 'react-immutable-pure-component';
+import { HotKeys } from 'react-hotkeys';
+import ImmutablePropTypes from 'react-immutable-proptypes';
+import Immutable from 'immutable';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import ImmutablePropTypes from 'react-immutable-proptypes';
 import { createSelector } from 'reselect';
 import { fetchStatus } from '../../../actions/statuses';
 import MissingIndicator from '../../../components/missing_indicator';
 import DetailedStatus from './components/detailed_status';
-import ActionBar from './components/action_bar';
 import Column from '../../ui/components/column';
 import { mountConversations, expandConversations } from '../../../actions/conversations';
 import {
@@ -46,19 +49,14 @@ import { initBlockModal } from '../../../actions/blocks';
 import { initBoostModal } from '../../../actions/boosts';
 import { initReport } from '../../../actions/reports';
 import { makeGetStatus, makeGetPictureInPicture } from '../../../selectors';
-import { ScrollContainer } from 'react-router-scroll-4';
 import ColumnBackButton from '../../../components/column_back_button';
-import ColumnHeader from '../../../components/column_header';
-import StatusContainer from '../../../containers/status_container';
+import StatusContainer from './containers/status_container';
 import { openModal } from '../../../actions/modal';
-import { defineMessages, injectIntl, FormattedMessage } from 'react-intl';
-import ImmutablePureComponent from 'react-immutable-pure-component';
-import { HotKeys } from 'react-hotkeys';
-import { boostModal, deleteModal } from '../../../initial_state';
+import { boostModal, deleteModal, me } from '../../../initial_state';
 import { attachFullscreenListener, detachFullscreenListener, isFullscreen } from '../../ui/util/fullscreen';
 import { textForScreenReader, defaultMediaVisibility } from '../../../components/status';
-import Icon from 'mastodon/components/icon';
-import { set } from 'lodash';
+import ColumnHeader from './components/column_header';
+import ActionBar from './components/action_bar';
 
 const THREADS_IDS = ['107573073420646722', '107573068830442733']
 
@@ -73,6 +71,8 @@ const messages = defineMessages({
   replyConfirm: { id: 'confirmations.reply.confirm', defaultMessage: 'Reply' },
   replyMessage: { id: 'confirmations.reply.message', defaultMessage: 'Replying now will overwrite the message you are currently composing. Are you sure you want to proceed?' },
   blockDomainConfirm: { id: 'confirmations.domain_block.confirm', defaultMessage: 'Hide entire domain' },
+  showReplies: { id: 'confirmations.show_replies', defaultMessage: 'Show Replies' },
+  hideReplies: { id: 'confirmations.hide_replies', defaultMessage: 'Hide Replies' }
 });
 
 const makeMapStateToProps = () => {
@@ -185,6 +185,7 @@ const makeMapStateToProps = () => {
     threads.sort((a, b) => a.thread.get('id') - b.thread.get('id'))
 
     return {
+      account: state.getIn(['accounts', accountId]),
       threads,
       status,
       ancestorsIds,
@@ -524,6 +525,23 @@ class Status extends ImmutablePureComponent {
     }
   }
 
+  hasReplies = (thread) => {
+    const showRepliesThreads = this.state.showRepliesThreads;
+    const threadId = thread.thread.get('id')
+    return showRepliesThreads.includes(threadId)
+  }
+
+  showReplies = (thread) => {
+    const showRepliesThreads = this.state.showRepliesThreads;
+    const threadId = thread.thread.get('id')
+
+    if (!this.hasReplies(thread)) this.setState({ showRepliesThreads: [...showRepliesThreads, threadId] })
+    else {
+      const filterShowRepliesThreads = showRepliesThreads.filter(t => t !== threadId)
+      this.setState({ showRepliesThreads: filterShowRepliesThreads })
+    }
+  }
+
   _selectChild(index, align_top) {
     const container = this.node;
     const element = container.querySelectorAll('.focusable')[index];
@@ -559,7 +577,6 @@ class Status extends ImmutablePureComponent {
   }
 
   render() {
-    let ancestors, descendants;
     const { shouldUpdateScroll, status, ancestorsIds, descendantsIds, intl, domain, multiColumn, pictureInPicture, threads } = this.props;
     const { fullscreen } = this.state;
 
@@ -572,22 +589,7 @@ class Status extends ImmutablePureComponent {
       );
     }
 
-    // if (status === null) {
-    //   return (
-    //     <Column>
-    //       <ColumnBackButton multiColumn={multiColumn} />
-    //       <MissingIndicator />
-    //     </Column>
-    //   );
-    // }
-
-    // if (ancestorsIds && ancestorsIds.size > 0) {
-    //   ancestors = <div>{this.renderChildren(ancestorsIds)}</div>;
-    // }
-
-    // if (descendantsIds && descendantsIds.size > 0) {
-    //   descendants = <div>{this.renderChildren(descendantsIds)}</div>;
-    // }
+    const otherUsername = this.props.account.get('acct');
 
     const handlers = {
       moveUp: this.handleHotkeyMoveUp,
@@ -607,9 +609,10 @@ class Status extends ImmutablePureComponent {
         <ColumnHeader
           showBackButton
           multiColumn={multiColumn}
-        // extraButton={(
-        //   <button className='column-header__button' title={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} aria-label={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} onClick={this.handleToggleAll} aria-pressed={status.get('hidden') ? 'false' : 'true'}><Icon id={status.get('hidden') ? 'eye-slash' : 'eye'} /></button>
-        // )}
+          extraButton={(
+            // <button className='column-header__button' title={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} aria-label={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} onClick={this.handleToggleAll} aria-pressed={status.get('hidden') ? 'false' : 'true'}><Icon id={status.get('hidden') ? 'eye-slash' : 'eye'} /></button>
+            <button className='column-header__button'>{otherUsername}</button>
+          )}
         />
 
         <ScrollContainer scrollKey='thread' shouldUpdateScroll={shouldUpdateScroll}>
@@ -627,7 +630,6 @@ class Status extends ImmutablePureComponent {
 
                 return (
                   <div key={thread.thread.get('id')}>
-                    {/* {threadAncestors} */}
                     <HotKeys handlers={handlers}>
                       <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, thread.thread, false)}>
                         <DetailedStatus
@@ -661,62 +663,20 @@ class Status extends ImmutablePureComponent {
                           onReport={this.handleReport}
                           onPin={this.handlePin}
                           onEmbed={this.handleEmbed}
+                          showReplies={this.showReplies.bind(this, thread)}
                         />
                       </div>
                     </HotKeys>
-                    <button onClick={() => {
-                      const showRepliesThreads = this.state.showRepliesThreads;
-                      const threadId = thread.thread.get('id')
 
-                      if (!showRepliesThreads.includes(threadId)) this.setState({ showRepliesThreads: [...showRepliesThreads, threadId] })
-                      else {
-                        const filterShowRepliesThreads = showRepliesThreads.filter(t => t !== threadId)
-                        this.setState({ showRepliesThreads: filterShowRepliesThreads })
-                      }
-                    }}>Show Replies</button>
-                    {this.state.showRepliesThreads.includes(thread.thread.get('id')) ? threadDescendants : <></>}
+                    {this.hasReplies(thread) ? (
+                      <>
+                        {threadDescendants}
+                      </>
+                    ) : <></>}
                   </div>
                 )
               })
             }
-            {/* {ancestors}
-            <HotKeys handlers={handlers}>
-              <div className={classNames('focusable', 'detailed-status__wrapper')} tabIndex='0' aria-label={textForScreenReader(intl, status, false)}>
-                <DetailedStatus
-                  key={`details-${status.get('id')}`}
-                  status={status}
-                  onOpenVideo={this.handleOpenVideo}
-                  onOpenMedia={this.handleOpenMedia}
-                  onToggleHidden={this.handleToggleHidden}
-                  domain={domain}
-                  showMedia={this.state.showMedia}
-                  onToggleMediaVisibility={this.handleToggleMediaVisibility}
-                  pictureInPicture={pictureInPicture}
-                />
-                <ActionBar
-                  key={`action-bar-${status.get('id')}`}
-                  status={status}
-                  onReply={this.handleReplyClick}
-                  onFavourite={this.handleFavouriteClick}
-                  onReblog={this.handleReblogClick}
-                  onBookmark={this.handleBookmarkClick}
-                  onDelete={this.handleDeleteClick}
-                  onDirect={this.handleDirectClick}
-                  onMention={this.handleMentionClick}
-                  onMute={this.handleMuteClick}
-                  onUnmute={this.handleUnmuteClick}
-                  onMuteConversation={this.handleConversationMuteClick}
-                  onBlock={this.handleBlockClick}
-                  onUnblock={this.handleUnblockClick}
-                  onBlockDomain={this.handleBlockDomainClick}
-                  onUnblockDomain={this.handleUnblockDomainClick}
-                  onReport={this.handleReport}
-                  onPin={this.handlePin}
-                  onEmbed={this.handleEmbed}
-                />
-              </div>
-            </HotKeys>
-            {descendants} */}
           </div>
         </ScrollContainer>
       </Column>

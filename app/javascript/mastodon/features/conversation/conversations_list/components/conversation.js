@@ -160,7 +160,7 @@ class Conversation extends ImmutablePureComponent {
               </div>
 
               <div className='conversation__content__names' onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave}>
-                <FormattedMessage id='conversation.with' defaultMessage='With {names}' values={{ names: <span>{names}</span> }} />
+                <FormattedMessage id='conversation.h' defaultMessage='{names}' values={{ names: <span>{names}</span> }} />
               </div>
             </div>
 
@@ -179,7 +179,7 @@ class Conversation extends ImmutablePureComponent {
               />
             )}
 
-            <div className='status__action-bar'>
+            {/* <div className='status__action-bar'>
               <IconButton className='status__action-bar-button' title={intl.formatMessage(messages.reply)} icon='reply' onClick={this.handleReply} />
 
               <div className='status__action-bar-dropdown'>
@@ -192,11 +192,11 @@ class Conversation extends ImmutablePureComponent {
                   direction='right'
                   title={intl.formatMessage(messages.more)}
                 />
-              </div>
-            </div>
+              </div> 
+          </div>*/}
           </div>
         </div>
-      </HotKeys>
+      </HotKeys >
     );
   }
 
