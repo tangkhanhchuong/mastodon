@@ -177,11 +177,13 @@ const makeMapStateToProps = () => {
 
           if (firstStatus) {
             threadDescendantsIds = getDescendantsIds(state, { id: firstStatus.get('id') });
-            threads.push({ thread: firstStatus, threadAncestorsIds, threadDescendantsIds });
+            threadDescendantsIds = threadDescendantsIds.sort((a, b) => a - b)
+            threads.push({ thread: firstStatus, threadDescendantsIds });
           }
         }
       }
     }
+
     threads.sort((a, b) => a.thread.get('id') - b.thread.get('id'))
 
     return {
@@ -619,11 +621,7 @@ class Status extends ImmutablePureComponent {
           <div className={classNames('scrollable', { fullscreen })} ref={this.setRef}>
             {
               threads.map(thread => {
-                let threadAncestors, threadDescendants;
-                if (thread.threadAncestorsIds && thread.threadAncestorsIds.size > 0) {
-                  threadAncestors = <div>{this.renderChildren(thread.threadAncestorsIds)}</div>;
-                }
-
+                let threadDescendants;
                 if (thread.threadDescendantsIds && thread.threadDescendantsIds.size > 0) {
                   threadDescendants = <div>{this.renderChildren(thread.threadDescendantsIds)}</div>;
                 }
