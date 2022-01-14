@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2021_05_26_193025) do
+ActiveRecord::Schema.define(version: 2021_11_26_000907) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -112,6 +112,23 @@ ActiveRecord::Schema.define(version: 2021_05_26_193025) do
     t.datetime "updated_at", null: false
     t.datetime "last_status_at"
     t.index ["account_id"], name: "index_account_stats_on_account_id", unique: true
+  end
+
+  create_table "account_statuses_cleanup_policies", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.boolean "enabled", default: true, null: false
+    t.integer "min_status_age", default: 1209600, null: false
+    t.boolean "keep_direct", default: true, null: false
+    t.boolean "keep_pinned", default: true, null: false
+    t.boolean "keep_polls", default: false, null: false
+    t.boolean "keep_media", default: false, null: false
+    t.boolean "keep_self_fav", default: true, null: false
+    t.boolean "keep_self_bookmark", default: true, null: false
+    t.integer "min_favs"
+    t.integer "min_reblogs"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["account_id"], name: "index_account_statuses_cleanup_policies_on_account_id"
   end
 
   create_table "account_warning_presets", force: :cascade do |t|
@@ -494,6 +511,18 @@ ActiveRecord::Schema.define(version: 2021_05_26_193025) do
     t.index ["account_id"], name: "index_lists_on_account_id"
   end
 
+  create_table "login_activities", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "authentication_method"
+    t.string "provider"
+    t.boolean "success"
+    t.string "failure_reason"
+    t.inet "ip"
+    t.string "user_agent"
+    t.datetime "created_at"
+    t.index ["user_id"], name: "index_login_activities_on_user_id"
+  end
+
   create_table "markers", force: :cascade do |t|
     t.bigint "user_id"
     t.string "timeline", default: "", null: false
@@ -658,6 +687,20 @@ ActiveRecord::Schema.define(version: 2021_05_26_193025) do
     t.bigint "voters_count"
     t.index ["account_id"], name: "index_polls_on_account_id"
     t.index ["status_id"], name: "index_polls_on_status_id"
+  end
+
+  create_table "preview_card_providers", force: :cascade do |t|
+    t.string "domain", default: "", null: false
+    t.string "icon_file_name"
+    t.string "icon_content_type"
+    t.bigint "icon_file_size"
+    t.datetime "icon_updated_at"
+    t.boolean "trendable"
+    t.datetime "reviewed_at"
+    t.datetime "requested_review_at"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["domain"], name: "index_preview_card_providers_on_domain", unique: true
   end
 
   create_table "preview_cards", force: :cascade do |t|
