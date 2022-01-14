@@ -44,6 +44,7 @@ export default class Header extends ImmutablePureComponent {
   }
 
   handleDirect = () => {
+    console.log(JSON.parse(JSON.stringify(this.props.account)))
     this.props.onDirect(this.props.account, this.context.router.history);
   }
 
@@ -91,7 +92,7 @@ export default class Header extends ImmutablePureComponent {
     this.props.onEditAccountNote(this.props.account);
   }
 
-  render () {
+  render() {
     const { account, hideTabs, identity_proofs } = this.props;
 
     if (account === null) {

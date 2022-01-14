@@ -9,11 +9,12 @@ import Immutable from 'immutable';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { createSelector } from 'reselect';
-import { fetchStatus } from '../../../actions/statuses';
-import MissingIndicator from '../../../components/missing_indicator';
+import IconButton from 'mastodon/components/icon_button';
+import { fetchStatus } from 'mastodon/actions/statuses';
+import MissingIndicator from 'mastodon/components/missing_indicator';
+import { mountConversations, expandConversations } from 'mastodon/actions/conversations';
 import DetailedStatus from './components/detailed_status';
 import Column from '../../ui/components/column';
-import { mountConversations, expandConversations } from '../../../actions/conversations';
 import {
   favourite,
   unfavourite,
@@ -23,44 +24,45 @@ import {
   unreblog,
   pin,
   unpin,
-} from '../../../actions/interactions';
+} from 'mastodon/actions/interactions';
 import {
   replyCompose,
   mentionCompose,
   directCompose,
-} from '../../../actions/compose';
+} from 'mastodon/actions/compose';
 import {
   muteStatus,
   unmuteStatus,
   deleteStatus,
   hideStatus,
   revealStatus,
-} from '../../../actions/statuses';
+} from 'mastodon/actions/statuses';
 import {
   unblockAccount,
   unmuteAccount,
-} from '../../../actions/accounts';
+} from 'mastodon/actions/accounts';
 import {
   blockDomain,
   unblockDomain,
-} from '../../../actions/domain_blocks';
-import { initMuteModal } from '../../../actions/mutes';
-import { initBlockModal } from '../../../actions/blocks';
-import { initBoostModal } from '../../../actions/boosts';
-import { initReport } from '../../../actions/reports';
-import { makeGetStatus, makeGetPictureInPicture } from '../../../selectors';
-import ColumnBackButton from '../../../components/column_back_button';
+} from 'mastodon/actions/domain_blocks';
+import { initMuteModal } from 'mastodon/actions/mutes';
+import { initBlockModal } from 'mastodon/actions/blocks';
+import { initBoostModal } from 'mastodon/actions/boosts';
+import { initReport } from 'mastodon/actions/reports';
+import { makeGetStatus, makeGetPictureInPicture } from 'mastodon/selectors';
+import ColumnBackButton from 'mastodon/components/column_back_button';
 import StatusContainer from './containers/status_container';
-import { openModal } from '../../../actions/modal';
-import { boostModal, deleteModal, me } from '../../../initial_state';
+import { openModal } from 'mastodon/actions/modal';
+import { boostModal, deleteModal, me } from 'mastodon/initial_state';
 import { attachFullscreenListener, detachFullscreenListener, isFullscreen } from '../../ui/util/fullscreen';
-import { textForScreenReader, defaultMediaVisibility } from '../../../components/status';
+import { textForScreenReader, defaultMediaVisibility } from 'mastodon/components/status';
 import ColumnHeader from './components/column_header';
 import ActionBar from './components/action_bar';
 
 const THREADS_IDS = ['107573073420646722', '107573068830442733']
 
 const messages = defineMessages({
+  addThread: { id: 'confirmations.add.thread', defaultMessage: 'Add Thread' },
   deleteConfirm: { id: 'confirmations.delete.confirm', defaultMessage: 'Delete' },
   deleteMessage: { id: 'confirmations.delete.message', defaultMessage: 'Are you sure you want to delete this status?' },
   redraftConfirm: { id: 'confirmations.redraft.confirm', defaultMessage: 'Delete & redraft' },
@@ -591,7 +593,7 @@ class Status extends ImmutablePureComponent {
       );
     }
 
-    const otherUsername = this.props.account.get('acct');
+    const otherAccount = this.props.account;
 
     const handlers = {
       moveUp: this.handleHotkeyMoveUp,
@@ -606,6 +608,8 @@ class Status extends ImmutablePureComponent {
       openMedia: this.handleHotkeyOpenMedia,
     };
 
+    console.log(JSON.parse(JSON.stringify(threads[0].thread)))
+
     return (
       <Column bindToDocument={!multiColumn} label={intl.formatMessage(messages.detailedStatus)}>
         <ColumnHeader
@@ -613,7 +617,10 @@ class Status extends ImmutablePureComponent {
           multiColumn={multiColumn}
           extraButton={(
             // <button className='column-header__button' title={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} aria-label={intl.formatMessage(status.get('hidden') ? messages.revealAll : messages.hideAll)} onClick={this.handleToggleAll} aria-pressed={status.get('hidden') ? 'false' : 'true'}><Icon id={status.get('hidden') ? 'eye-slash' : 'eye'} /></button>
-            <button className='column-header__button'>{otherUsername}</button>
+            <>
+              <button className='column-header__button'>{otherAccount.get('acct')}</button>
+              <button className='column-header__button'><IconButton className='comment' title={intl.formatMessage(messages.addThread)} icon='comment' onClick={this.handleDirectClick.bind(this, otherAccount, this.context.router.history)} /></button>
+            </>
           )}
         />
 

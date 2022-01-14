@@ -184,6 +184,7 @@ export default class StatusContent extends React.PureComponent {
       'status__content--collapsed': renderReadMore,
     });
 
+
     const showThreadButton = (
       <button className='status__content__read-more-button' onClick={this.props.onClick}>
         <FormattedMessage id='status.show_thread' defaultMessage='Show thread' />
@@ -230,7 +231,7 @@ export default class StatusContent extends React.PureComponent {
       );
     } else if (this.props.onClick) {
       const output = [
-        <div className={classNames} ref={this.setRef} tabIndex='0' onMouseDown={this.handleMouseDown} onMouseUp={this.handleMouseUp} key='status-content' onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave}>
+        <div className={classNames} style={{}} ref={this.setRef} tabIndex='0' onMouseDown={this.handleMouseDown} onMouseUp={this.handleMouseUp} key='status-content' onMouseEnter={this.handleMouseEnter} onMouseLeave={this.handleMouseLeave}>
           <div className='status__content__text status__content__text--visible translate' dangerouslySetInnerHTML={content} />
 
           {!!status.get('poll') && <PollContainer pollId={status.get('poll')} />}

@@ -5,6 +5,8 @@ import classNames from 'classnames';
 import { FormattedMessage, injectIntl, defineMessages } from 'react-intl';
 import Icon from 'mastodon/components/icon';
 
+import IconButton from 'mastodon/components/icon_button';
+
 const messages = defineMessages({
   show: { id: 'column_header.show_settings', defaultMessage: 'Show settings' },
   hide: { id: 'column_header.hide_settings', defaultMessage: 'Hide settings' },

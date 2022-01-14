@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import ImmutablePureComponent from 'react-immutable-pure-component';
-import StatusContent from 'mastodon/components/status_content';
+import StatusContent from '../../conversation/components/status_content';
 import AttachmentList from 'mastodon/components/attachment_list';
 import { defineMessages, injectIntl, FormattedMessage } from 'react-intl';
 import DropdownMenuContainer from 'mastodon/containers/dropdown_menu_container';

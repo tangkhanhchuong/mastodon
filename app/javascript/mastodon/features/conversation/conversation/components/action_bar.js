@@ -4,9 +4,9 @@ import ImmutablePropTypes from 'react-immutable-proptypes';
 import { defineMessages, injectIntl } from 'react-intl';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
-import IconButton from '../../../../components/icon_button';
-import DropdownMenuContainer from '../../../../containers/dropdown_menu_container';
-import { me, isStaff } from '../../../../initial_state';
+import IconButton from 'mastodon/components/icon_button';
+import DropdownMenuContainer from 'mastodon/containers/dropdown_menu_container';
+import { me, isStaff } from 'mastodon/initial_state';
 
 const messages = defineMessages({
   delete: { id: 'status.delete', defaultMessage: 'Delete' },
