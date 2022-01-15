@@ -248,7 +248,6 @@ class Status extends ImmutablePureComponent {
 
   componentDidMount() {
     attachFullscreenListener(this.onFullScreenChange);
-    console.log('did mount')
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -608,8 +607,6 @@ class Status extends ImmutablePureComponent {
       openMedia: this.handleHotkeyOpenMedia,
     };
 
-    console.log(JSON.parse(JSON.stringify(threads[0].thread)))
-
     return (
       <Column bindToDocument={!multiColumn} label={intl.formatMessage(messages.detailedStatus)}>
         <ColumnHeader
@@ -640,6 +637,7 @@ class Status extends ImmutablePureComponent {
                         <DetailedStatus
                           key={`details-${thread.thread.get('id')}`}
                           status={thread.thread}
+                          numberOfReplies={thread.threadDescendantsIds.size}
                           onOpenVideo={this.handleOpenVideo}
                           onOpenMedia={this.handleOpenMedia}
                           onToggleHidden={this.handleToggleHidden}

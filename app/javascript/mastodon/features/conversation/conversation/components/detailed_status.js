@@ -106,7 +106,7 @@ class DetailedStatus extends ImmutablePureComponent {
   render() {
     const status = (this.props.status && this.props.status.get('reblog')) ? this.props.status.get('reblog') : this.props.status;
     const outerStyle = { boxSizing: 'border-box' };
-    const { intl, compact, pictureInPicture } = this.props;
+    const { intl, compact, pictureInPicture, numberOfReplies } = this.props;
 
     if (!status) {
       return null;
@@ -257,7 +257,9 @@ class DetailedStatus extends ImmutablePureComponent {
           <div className='detailed-status__meta'>
             <a className='detailed-status__datetime' href={status.get('url')} target='_blank' rel='noopener noreferrer'>
               <FormattedDate value={new Date(status.get('created_at'))} hour12={false} year='numeric' month='short' day='2-digit' hour='2-digit' minute='2-digit' />
-            </a>{visibilityLink}{applicationLink}{reblogLink} · {favouriteLink}
+              &nbsp;&nbsp;•&nbsp;&nbsp;({numberOfReplies} Replies)
+            </a>
+            {/* {visibilityLink}{applicationLink}{reblogLink} · {favouriteLink} */}
           </div>
         </div>
       </div>
