@@ -41,7 +41,7 @@ class DropdownMenu extends React.PureComponent {
     }
   }
 
-  componentDidMount () {
+  componentDidMount() {
     document.addEventListener('click', this.handleDocumentClick, false);
     document.addEventListener('keydown', this.handleKeyDown, false);
     document.addEventListener('touchend', this.handleDocumentClick, listenerOptions);
@@ -51,7 +51,7 @@ class DropdownMenu extends React.PureComponent {
     this.setState({ mounted: true });
   }
 
-  componentWillUnmount () {
+  componentWillUnmount() {
     document.removeEventListener('click', this.handleDocumentClick, false);
     document.removeEventListener('keydown', this.handleKeyDown, false);
     document.removeEventListener('touchend', this.handleDocumentClick, listenerOptions);
@@ -70,29 +70,29 @@ class DropdownMenu extends React.PureComponent {
     const index = items.indexOf(document.activeElement);
     let element = null;
 
-    switch(e.key) {
-    case 'ArrowDown':
-      element = items[index+1] || items[0];
-      break;
-    case 'ArrowUp':
-      element = items[index-1] || items[items.length-1];
-      break;
-    case 'Tab':
-      if (e.shiftKey) {
-        element = items[index-1] || items[items.length-1];
-      } else {
-        element = items[index+1] || items[0];
-      }
-      break;
-    case 'Home':
-      element = items[0];
-      break;
-    case 'End':
-      element = items[items.length-1];
-      break;
-    case 'Escape':
-      this.props.onClose();
-      break;
+    switch (e.key) {
+      case 'ArrowDown':
+        element = items[index + 1] || items[0];
+        break;
+      case 'ArrowUp':
+        element = items[index - 1] || items[items.length - 1];
+        break;
+      case 'Tab':
+        if (e.shiftKey) {
+          element = items[index - 1] || items[items.length - 1];
+        } else {
+          element = items[index + 1] || items[0];
+        }
+        break;
+      case 'Home':
+        element = items[0];
+        break;
+      case 'End':
+        element = items[items.length - 1];
+        break;
+      case 'Escape':
+        this.props.onClose();
+        break;
     }
 
     if (element) {
@@ -123,7 +123,8 @@ class DropdownMenu extends React.PureComponent {
     }
   }
 
-  renderItem (option, i) {
+  renderItem(option, i) {
+    console.log({ option })
     if (option === null) {
       return <li key={`sep-${i}`} className='dropdown-menu__separator' />;
     }
@@ -139,7 +140,7 @@ class DropdownMenu extends React.PureComponent {
     );
   }
 
-  render () {
+  render() {
     const { items, style, placement, arrowOffsetLeft, arrowOffsetTop } = this.props;
     const { mounted } = this.state;
 
@@ -217,22 +218,22 @@ export default class Dropdown extends React.PureComponent {
   }
 
   handleButtonKeyDown = (e) => {
-    switch(e.key) {
-    case ' ':
-    case 'Enter':
-      this.handleMouseDown();
-      break;
+    switch (e.key) {
+      case ' ':
+      case 'Enter':
+        this.handleMouseDown();
+        break;
     }
   }
 
   handleKeyPress = (e) => {
-    switch(e.key) {
-    case ' ':
-    case 'Enter':
-      this.handleClick(e);
-      e.stopPropagation();
-      e.preventDefault();
-      break;
+    switch (e.key) {
+      case ' ':
+      case 'Enter':
+        this.handleClick(e);
+        e.stopPropagation();
+        e.preventDefault();
+        break;
     }
   }
 
@@ -265,7 +266,7 @@ export default class Dropdown extends React.PureComponent {
     }
   }
 
-  render () {
+  render() {
     const { icon, items, size, title, disabled, dropdownPlacement, openDropdownId, openedViaKeyboard } = this.props;
     const open = this.state.id === openDropdownId;
 

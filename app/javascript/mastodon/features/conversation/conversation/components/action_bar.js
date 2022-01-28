@@ -185,7 +185,7 @@ class ActionBar extends React.PureComponent {
   }
 
   render() {
-    const { status, relationship, intl, showReplies } = this.props;
+    const { status, relationship, intl, showReplies, isReplies } = this.props;
 
     const publicStatus = ['public', 'unlisted'].includes(status.get('visibility'));
     const mutingConversation = status.get('muted');
@@ -283,7 +283,7 @@ class ActionBar extends React.PureComponent {
         <div className='detailed-status__button'><IconButton className='comment' title={intl.formatMessage(messages.bookmark)} icon='comment' onClick={showReplies} /></div>
 
         <div className='detailed-status__action-bar-dropdown'>
-          <DropdownMenuContainer size={18} icon='ellipsis-h' status={status} items={menu} direction='left' title={intl.formatMessage(messages.more)} />
+          <DropdownMenuContainer isReplies={isReplies} size={18} icon='ellipsis-h' status={status} items={menu} direction='left' title={intl.formatMessage(messages.more)} />
         </div>
       </div>
     );
